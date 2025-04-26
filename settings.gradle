@@ -1,0 +1,4 @@
+rootProject.name = 'watch-tower-stream'
+include(
+        "core-service",
+)
