@@ -3,53 +3,66 @@ package com.hopoong.resource.app.system;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Service
 public class SystemServiceImpl implements SystemService {
-    private static final double CPU_USAGE_THRESHOLD = 0.9;
-    private static final double MEMORY_USAGE_THRESHOLD = 0.9;
-    private static final double DISK_USAGE_THRESHOLD = 0.9;
-
+    private static final double STAGE1_THRESHOLD = 0.6;
+    private static final double STAGE2_THRESHOLD = 0.7;
+    private static final double STAGE3_THRESHOLD = 0.8;
 
     // CPU
     @Override
     public void checkCpuUsage() {
-        OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
-        if (osBean instanceof com.sun.management.OperatingSystemMXBean) {
-            double cpuLoad = ((com.sun.management.OperatingSystemMXBean) osBean).getSystemCpuLoad();
-            if (cpuLoad >= CPU_USAGE_THRESHOLD) {
-                log.warn("[ALERT] CPU usage high: {}%", cpuLoad * 100);
-            }
-        }
+        double cpuLoad = ThreadLocalRandom.current().nextDouble(0.0, 1.0);
+        logUsage("CPU", cpuLoad);
     }
 
     // Memory
     @Override
     public void checkMemoryUsage() {
-        com.sun.management.OperatingSystemMXBean osBean = (com.sun.management.OperatingSystemMXBean)
-                ManagementFactory.getOperatingSystemMXBean();
-        double totalMemory = osBean.getTotalPhysicalMemorySize();
-        double freeMemory = osBean.getFreePhysicalMemorySize();
+        double totalMemory = 16L * 1024 * 1024 * 1024; // 16GB
+        double freeMemory = ThreadLocalRandom.current().nextLong(0, (long) totalMemory);
         double usage = (totalMemory - freeMemory) / totalMemory;
-        if (usage >= MEMORY_USAGE_THRESHOLD) {
-            log.warn("[ALERT] Memory usage high: {}%", usage * 100);
-        }
+        logUsage("Memory", usage);
     }
 
     // Disk
     @Override
     public void checkDiskUsage() {
-        File root = new File("/");
-        long totalSpace = root.getTotalSpace();
-        long usableSpace = root.getUsableSpace();
+        long totalSpace = 500L * 1024 * 1024 * 1024; // 500GB
+        long usableSpace = ThreadLocalRandom.current().nextLong(0, totalSpace);
         double usage = (totalSpace - usableSpace) / (double) totalSpace;
-        if (usage >= DISK_USAGE_THRESHOLD) {
-            log.warn("[ALERT] Disk usage high: {}%", usage * 100);
+        logUsage("Disk", usage);
+    }
+
+
+    private void logUsage(String resourceName, double usage) {
+        String result = String.format("%.3f", usage * 100);
+        if (usage >= STAGE3_THRESHOLD) {
+            log.warn("[ALERT-3단계] {} usage very high: {}%", resourceName, result);
+        } else if (usage >= STAGE2_THRESHOLD) {
+            log.warn("[ALERT-2단계] {} usage high: {}%", resourceName, result);
+        } else if (usage >= STAGE1_THRESHOLD) {
+            log.warn("[ALERT-1단계] {} usage warning: {}%", resourceName, result);
         }
+    }
+
+    private static String getRandomIpAddress() {
+        int randomThirdOctet = ThreadLocalRandom.current().nextInt(0, 256);
+        return String.format("192.168.%d.204", randomThirdOctet);
+    }
+
+    private static String getRandomServerName() {
+        int number = ThreadLocalRandom.current().nextInt(0, 100);
+        return String.format("Server-%02d", number);
+    }
+
+    private String getCurrentTime() {
+        return LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
     }
 
 }
