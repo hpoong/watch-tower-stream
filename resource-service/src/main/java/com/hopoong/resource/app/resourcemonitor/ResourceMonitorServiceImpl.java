@@ -1,18 +1,23 @@
-package com.hopoong.resource.app.system;
+package com.hopoong.resource.app.resourcemonitor;
 
+import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
+import com.hopoong.core.util.RandomUtil;
+import com.hopoong.resource.event.ResourceMonitorEventHandler;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Service
-public class SystemServiceImpl implements SystemService {
+@RequiredArgsConstructor
+public class ResourceMonitorServiceImpl implements ResourceMonitorService {
     private static final double STAGE1_THRESHOLD = 0.6;
     private static final double STAGE2_THRESHOLD = 0.7;
     private static final double STAGE3_THRESHOLD = 0.8;
+
+    private final ResourceMonitorEventHandler resourceMonitorEventHandler;
 
     // CPU
     @Override
@@ -41,28 +46,23 @@ public class SystemServiceImpl implements SystemService {
 
 
     private void logUsage(String resourceName, double usage) {
-        String result = String.format("%.3f", usage * 100);
-        if (usage >= STAGE3_THRESHOLD) {
-            log.warn("[ALERT-3단계] {} usage very high: {}%", resourceName, result);
-        } else if (usage >= STAGE2_THRESHOLD) {
-            log.warn("[ALERT-2단계] {} usage high: {}%", resourceName, result);
-        } else if (usage >= STAGE1_THRESHOLD) {
-            log.warn("[ALERT-1단계] {} usage warning: {}%", resourceName, result);
+        Double usagePercent = usage * 100;
+
+        String alertLevel = usage >= STAGE3_THRESHOLD ? "critical" :
+                usage >= STAGE2_THRESHOLD ? "warning" :
+                usage >= STAGE1_THRESHOLD ? "info" : null;
+
+        if(alertLevel != null) {
+            resourceMonitorEventHandler.handleSystemResourceMetricsEvent(
+                new SystemResourceMetricsMessage(
+                        resourceName,
+                        usagePercent,
+                        alertLevel,
+                        RandomUtil.getRandomServerName(),
+                        RandomUtil.getRandomIpAddress(),
+                        RandomUtil.getCurrentTime()
+                )
+            );
         }
     }
-
-    private static String getRandomIpAddress() {
-        int randomThirdOctet = ThreadLocalRandom.current().nextInt(0, 256);
-        return String.format("192.168.%d.204", randomThirdOctet);
-    }
-
-    private static String getRandomServerName() {
-        int number = ThreadLocalRandom.current().nextInt(0, 100);
-        return String.format("Server-%02d", number);
-    }
-
-    private String getCurrentTime() {
-        return LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-    }
-
 }

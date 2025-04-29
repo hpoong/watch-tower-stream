@@ -1,6 +1,6 @@
-package com.hopoong.resource.app.system;
+package com.hopoong.resource.app.resourcemonitor;
 
-public interface SystemService {
+public interface ResourceMonitorService {
 
     // CPU
     void checkCpuUsage();
