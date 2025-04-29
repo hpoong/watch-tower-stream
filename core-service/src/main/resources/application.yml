@@ -1,4 +1,4 @@
 logging:
-  config: classpath:logback/logback-srping.xml
+  config: classpath:logback/logback-spring.xml
   level:
     root: info
