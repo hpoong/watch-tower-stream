@@ -59,8 +59,7 @@ public class ResourceMonitorServiceImpl implements ResourceMonitorService {
                         usagePercent,
                         alertLevel,
                         RandomUtil.getRandomServerName(),
-                        RandomUtil.getRandomIpAddress(),
-                        RandomUtil.getCurrentTime()
+                        RandomUtil.getRandomIpAddress()
                 )
             );
         }

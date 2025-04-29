@@ -6,6 +6,5 @@ public record SystemResourceMetricsMessage(
         double usagePercent,
         String alertLevel,
         String serverName,
-        String ipAddress,
-        String timestamp
+        String ipAddress
 ) {}

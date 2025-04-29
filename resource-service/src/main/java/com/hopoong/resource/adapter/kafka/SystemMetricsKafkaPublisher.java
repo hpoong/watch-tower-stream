@@ -1,12 +1,16 @@
 package com.hopoong.resource.adapter.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hopoong.core.message.common.KafkaCommonMessage;
 import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
+import com.hopoong.core.topic.KafkaTopicManager;
+import com.hopoong.core.util.RandomUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
 import java.util.function.Consumer;
 
 
@@ -20,6 +24,20 @@ public class SystemMetricsKafkaPublisher implements Consumer<SystemResourceMetri
     @SneakyThrows
     @Override
     public void accept(SystemResourceMetricsMessage message) {
-        System.out.println(objectMapper.writeValueAsString(message));
+
+        KafkaCommonMessage<?> kafkaMessage = KafkaCommonMessage.builder()
+                .header(
+                        KafkaCommonMessage.Header.builder()
+                            .type("SYSTEM_METRICS")
+                            .traceId(UUID.randomUUID().toString())
+                            .timestamp(RandomUtil.getCurrentTime())
+                            .build()
+                )
+                .body(message)
+                .build();
+
+        String payload = objectMapper.writeValueAsString(kafkaMessage);
+        String partitionKey = message.serverName();
+        kafkaTemplate.send(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC, partitionKey, payload);
     }
 }
