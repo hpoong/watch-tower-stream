@@ -13,7 +13,17 @@ public class ResourceMonitorEventHandlerImpl implements ResourceMonitorEventHand
 
     // 시스템 리소스
     @Override
-    public void handleSystemResourceMetricsEvent(SystemResourceMetricsMessage message) {
+    public void handleSystemResourceMetricsEvent(String resourceName, double usage, String level, String serverName, String ip) {
+        SystemResourceMetricsMessage message = SystemResourceMetricsMessage.builder()
+                .serverName(serverName)
+                .ipAddress(ip)
+                .resourceName(resourceName)
+                .usagePercent(usage)
+                .alertLevel(level)
+                .build();
+
         kafkaPublisher.accept(message);
     }
+
+
 }

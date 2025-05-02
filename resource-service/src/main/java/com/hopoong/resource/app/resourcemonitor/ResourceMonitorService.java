@@ -3,11 +3,13 @@ package com.hopoong.resource.app.resourcemonitor;
 public interface ResourceMonitorService {
 
     // CPU
-    void checkCpuUsage();
+    double measureCpuUsage();
 
     // Memory
-    void checkMemoryUsage();
+    double measureMemoryUsage();
 
     // Disk
-    void checkDiskUsage();
+    double measureDiskUsage();
+
+    String determineAlert(double usage);
 }

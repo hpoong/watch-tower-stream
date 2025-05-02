@@ -19,7 +19,7 @@ public class RandomUtil {
 
     // Server Name
     public static String getRandomServerName() {
-        int number = ThreadLocalRandom.current().nextInt(0, 100);
+        int number = ThreadLocalRandom.current().nextInt(0, 10);
         return String.format("Server-%02d", number);
     }
 

@@ -1,8 +1,5 @@
 package com.hopoong.resource.app.resourcemonitor;
 
-import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
-import com.hopoong.core.util.RandomUtil;
-import com.hopoong.resource.event.ResourceMonitorEventHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,55 +10,45 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 @RequiredArgsConstructor
 public class ResourceMonitorServiceImpl implements ResourceMonitorService {
-    private static final double STAGE1_THRESHOLD = 0.6;
-    private static final double STAGE2_THRESHOLD = 0.7;
-    private static final double STAGE3_THRESHOLD = 0.8;
-
-    private final ResourceMonitorEventHandler resourceMonitorEventHandler;
+    private static final double STAGE1_THRESHOLD = 70.0;
+    private static final double STAGE2_THRESHOLD = 80.0;
+    private static final double STAGE3_THRESHOLD = 90.0;
 
     // CPU
     @Override
-    public void checkCpuUsage() {
-        double cpuLoad = ThreadLocalRandom.current().nextDouble(0.0, 1.0);
-        logUsage("CPU", cpuLoad);
+    public double measureCpuUsage() {
+        double raw = ThreadLocalRandom.current().nextDouble(0.0, 1.0);
+        return roundToThreeDecimalPlaces(raw * 100);
     }
 
     // Memory
     @Override
-    public void checkMemoryUsage() {
-        double totalMemory = 16L * 1024 * 1024 * 1024; // 16GB
-        double freeMemory = ThreadLocalRandom.current().nextLong(0, (long) totalMemory);
-        double usage = (totalMemory - freeMemory) / totalMemory;
-        logUsage("Memory", usage);
+    public double measureMemoryUsage() {
+        long total = 16L * 1024 * 1024 * 1024;
+        long free = ThreadLocalRandom.current().nextLong(0, total);
+        double usage = (total - free) / (double) total;
+        return roundToThreeDecimalPlaces(usage * 100);
     }
 
     // Disk
     @Override
-    public void checkDiskUsage() {
-        long totalSpace = 500L * 1024 * 1024 * 1024; // 500GB
-        long usableSpace = ThreadLocalRandom.current().nextLong(0, totalSpace);
-        double usage = (totalSpace - usableSpace) / (double) totalSpace;
-        logUsage("Disk", usage);
+    public double measureDiskUsage() {
+        long total = 500L * 1024 * 1024 * 1024;
+        long usable = ThreadLocalRandom.current().nextLong(0, total);
+        double usage = (total - usable) / (double) total;
+        return roundToThreeDecimalPlaces(usage * 100);
+    }
+
+    public double roundToThreeDecimalPlaces(double value) {
+        return Math.round(value * 1000.0) / 1000.0;
+    }
+
+    @Override
+    public String determineAlert(double usage) {
+        return usage >= STAGE3_THRESHOLD ? "critical" :
+            usage >= STAGE2_THRESHOLD ? "warning" :
+            usage >= STAGE1_THRESHOLD ? "info" : "normal";
     }
 
 
-    private void logUsage(String resourceName, double usage) {
-        Double usagePercent = usage * 100;
-
-        String alertLevel = usage >= STAGE3_THRESHOLD ? "critical" :
-                usage >= STAGE2_THRESHOLD ? "warning" :
-                usage >= STAGE1_THRESHOLD ? "info" : null;
-
-        if(alertLevel != null) {
-            resourceMonitorEventHandler.handleSystemResourceMetricsEvent(
-                new SystemResourceMetricsMessage(
-                        resourceName,
-                        usagePercent,
-                        alertLevel,
-                        RandomUtil.getRandomServerName(),
-                        RandomUtil.getRandomIpAddress()
-                )
-            );
-        }
-    }
 }
