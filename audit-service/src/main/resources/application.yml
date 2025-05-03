@@ -1,0 +1,18 @@
+
+logging:
+  config: classpath:logback/logback-spring.xml
+  level:
+    root: info
+
+
+server:
+  port: 9400
+
+
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: -1
