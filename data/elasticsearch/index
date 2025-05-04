@@ -1,0 +1,25 @@
+PUT system_metrics
+{
+  "mappings": {
+    "properties": {
+      "timestamp": {
+        "type": "date"
+      },
+      "resourceName": {
+        "type": "keyword"
+      },
+      "usagePercent": {
+        "type": "float"
+      },
+      "alertLevel": {
+        "type": "keyword"
+      },
+      "serverName": {
+        "type": "keyword"
+      },
+      "ipAddress": {
+        "type": "ip"
+      }
+    }
+  }
+}
