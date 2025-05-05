@@ -1,8 +1,8 @@
 package com.hopoong.audit.adapter.kafka;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hopoong.audit.usecase.resourcemonitor.ResourceMonitorService;
 import com.hopoong.core.message.common.KafkaCommonMessage;
 import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
 import com.hopoong.core.topic.KafkaTopicManager;
@@ -12,6 +12,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,13 +26,15 @@ public class SystemMetricsKafkaConsumer {
 
     private final Map<String, List<SystemResourceMetricsMessage>> serverMessageMap = new ConcurrentHashMap<>();
 
+    private final ResourceMonitorService resourceMonitorService;
+
     @KafkaListener(
             topics = KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC,
             groupId = "system-resource-metrics-group",
             containerFactory = "kafkaListenerContainerSystemMetricsFactory",
             concurrency = "1"
     )
-    public void consumeSystemResourceMetrics(ConsumerRecord<String, String> record) throws JsonProcessingException {
+    public void consumeSystemResourceMetrics(ConsumerRecord<String, String> record) throws IOException {
         KafkaCommonMessage<SystemResourceMetricsMessage> message =
                 objectMapper.readValue(record.value(), new TypeReference<>() {});
 
@@ -56,6 +59,9 @@ public class SystemMetricsKafkaConsumer {
                         m.alertLevel(),
                         header.getTimestamp()
                 );
+
+                // insert
+                resourceMonitorService.insertSystemResourceMetrics(message);
             }
 
 //            [SEQ-CHECK] Server-01:

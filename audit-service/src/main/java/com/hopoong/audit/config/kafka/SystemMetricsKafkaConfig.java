@@ -1,4 +1,4 @@
-package com.hopoong.audit.config;
+package com.hopoong.audit.config.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

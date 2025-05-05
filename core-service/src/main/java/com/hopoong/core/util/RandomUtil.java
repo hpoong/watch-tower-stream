@@ -1,7 +1,7 @@
 package com.hopoong.core.util;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class RandomUtil {
@@ -24,8 +24,8 @@ public class RandomUtil {
     }
 
     // Time
-    public static String getCurrentTime() {
-        return LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+    public static LocalDateTime getCurrentTime() {
+        return LocalDateTime.now(ZoneId.of("Asia/Seoul"));
     }
 
 }
