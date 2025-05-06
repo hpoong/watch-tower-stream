@@ -15,6 +15,7 @@ public class KafkaCommonMessage<T> {
     @Getter
     @Builder
     public static class Header {
+        private String topic;
         private String type;
         @Builder.Default private String source = "resource-service";
         private String traceId;

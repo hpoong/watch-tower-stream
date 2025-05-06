@@ -28,6 +28,7 @@ public class SystemMetricsKafkaPublisher implements Consumer<SystemResourceMetri
         KafkaCommonMessage<?> kafkaMessage = KafkaCommonMessage.builder()
                 .header(
                         KafkaCommonMessage.Header.builder()
+                            .topic(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC)
                             .type("SYSTEM_METRICS")
                             .traceId(UUID.randomUUID().toString())
                             .timestamp(RandomUtil.getCurrentTime())

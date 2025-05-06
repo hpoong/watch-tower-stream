@@ -1,7 +1,9 @@
 package com.hopoong.audit.adapter.kafka;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hopoong.audit.common.exception.KafkaProcessingException;
 import com.hopoong.audit.usecase.resourcemonitor.ResourceMonitorService;
 import com.hopoong.core.message.common.KafkaCommonMessage;
 import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
@@ -10,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -34,49 +37,70 @@ public class SystemMetricsKafkaConsumer {
             containerFactory = "kafkaListenerContainerSystemMetricsFactory",
             concurrency = "1"
     )
-    public void consumeSystemResourceMetrics(ConsumerRecord<String, String> record) throws IOException {
-        KafkaCommonMessage<SystemResourceMetricsMessage> message =
-                objectMapper.readValue(record.value(), new TypeReference<>() {});
+    public void consumeSystemResourceMetrics(ConsumerRecord<String, String> record, Acknowledgment ack) throws IOException {
+        try {
+            KafkaCommonMessage<SystemResourceMetricsMessage> message =
+                    objectMapper.readValue(record.value(), new TypeReference<>() {});
 
-        SystemResourceMetricsMessage body = message.getBody();
-        KafkaCommonMessage.Header header = message.getHeader();
-        String server = body.serverName();
+            SystemResourceMetricsMessage body = message.getBody();
+            KafkaCommonMessage.Header header = message.getHeader();
+            String server = body.serverName();
 
-        serverMessageMap
-                .computeIfAbsent(server, k -> Collections.synchronizedList(new ArrayList<>()))
-                .add(body);
+            resourceMonitorService.insertSystemResourceMetrics(message);
 
-        if (serverMessageMap.get(server).size() == 3) {
-            List<SystemResourceMetricsMessage> sortedList = serverMessageMap.get(server).stream()
-                    .sorted(Comparator.comparing(SystemResourceMetricsMessage::resourceName))
-                    .toList();
+            // 출력용
+            serverMessageMap
+                    .computeIfAbsent(server, k -> Collections.synchronizedList(new ArrayList<>()))
+                    .add(body);
 
-            log.info("[SEQ-CHECK] {}:", server);
-            for (SystemResourceMetricsMessage m : sortedList) {
-                log.info("  → [{}] {}% ({}) @ {}",
-                        m.resourceName(),
-                        String.format("%.3f", m.usagePercent()),
-                        m.alertLevel(),
-                        header.getTimestamp()
-                );
+            if (serverMessageMap.get(server).size() == 3) {
+                List<SystemResourceMetricsMessage> sortedList = serverMessageMap.get(server).stream()
+                        .sorted(Comparator.comparing(SystemResourceMetricsMessage::resourceName))
+                        .toList();
 
-                // insert
-                resourceMonitorService.insertSystemResourceMetrics(message);
+                log.info("[SEQ-CHECK] {}:", server);
+                for (SystemResourceMetricsMessage m : sortedList) {
+                    log.info("  → [{}] {}% ({}) @ {}",
+                            m.resourceName(),
+                            String.format("%.3f", m.usagePercent()),
+                            m.alertLevel(),
+                            header.getTimestamp()
+                    );
+                }
+                serverMessageMap.get(server).clear();
+
+                // 강제 에러 처리
+                throw new KafkaProcessingException(record.topic(), record.partition(), record.offset(), header.getTraceId());
             }
 
-//            [SEQ-CHECK] Server-01:
-//              → [CPU] 67.123% (info) @ 2025-04-29T12:00:00
-//              → [Memory] 73.892% (warning) @ 2025-04-29T12:00:00
-//              → [Disk] 91.002% (critical) @ 2025-04-29T12:00:00
-//
-//            [SEQ-CHECK] Server-02:
-//              → [CPU] 54.002% (info) @ 2025-04-29T12:00:01
-//              → [Memory] 63.882% (info) @ 2025-04-29T12:00:01
+            ack.acknowledge();
 
-            // 출력 후 초기화
-            serverMessageMap.get(server).clear();
+        } catch (Exception e) {
+            KafkaCommonMessage.Header header = extractHeaderSafely(record);
+            log.error("[CONSUMER ERROR] Failed to process message", e);
+            log.error("  ↳ partition={}, offset={}, traceId={}, topic={}",
+                    record.partition(),
+                    record.offset(),
+                    Optional.ofNullable(header)
+                            .map(KafkaCommonMessage.Header::getTraceId)
+                            .orElse("UNKNOWN"),
+                    Optional.ofNullable(header)
+                            .map(KafkaCommonMessage.Header::getTopic)
+                            .orElse("UNKNOWN")
+            );
+
+            throw e;
         }
     }
 
+    private KafkaCommonMessage.Header extractHeaderSafely(ConsumerRecord<String, String> record) {
+        try {
+            KafkaCommonMessage<SystemResourceMetricsMessage> message =
+                    objectMapper.readValue(record.value(), new TypeReference<>() {});
+            return message.getHeader();
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
 
 }
