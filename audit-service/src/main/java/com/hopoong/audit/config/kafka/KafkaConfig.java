@@ -68,9 +68,7 @@ public class KafkaConfig {
         ConsumerRecordRecoverer recover = (record, ex) -> {
             try {
                 kafkaTemplate.send(record.topic() + ".DLQ", String.valueOf(record.key()), record.value()).get();
-                log.info("DLQ 전송 성공: {}", record.topic());
             } catch (Exception sendEx) {
-                log.error("DLQ 전송 실패", sendEx);
                 throw new KafkaException("DLQ 전송 실패", sendEx);
             }
         };
