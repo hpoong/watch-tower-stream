@@ -21,8 +21,6 @@ spring:
       acks: 1
     streams:
       application-id: dlq-delay-streams-app
-      default-key-serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-      default-value-serde: org.apache.kafka.common.serialization.Serdes$StringSerde
 
 elasticsearch:
   host: localhost
