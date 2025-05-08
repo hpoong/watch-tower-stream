@@ -24,6 +24,7 @@ dependencies {
 
 	// kafka
 	implementation 'org.springframework.kafka:spring-kafka'
+	implementation 'org.apache.kafka:kafka-streams'
 
 	// elasticsearch
 	implementation 'co.elastic.clients:elasticsearch-java:8.12.0'

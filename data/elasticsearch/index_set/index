@@ -19,7 +19,22 @@ PUT system_metrics
       },
       "ipAddress": {
         "type": "ip"
-      }
+      },
+       "traceId": {
+         "type": "keyword"
+       }
     }
   }
 }
+
+PUT /system_metrics/_mapping
+{
+  "properties": {
+    "traceId": {
+      "type": "keyword"
+    }
+  }
+}
+
+
+GET /system_metrics/_mapping

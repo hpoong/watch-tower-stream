@@ -16,4 +16,5 @@ public class SystemMetricDocument {
     private String alertLevel;
     private String serverName;
     private String ipAddress;
+    private String traceId;
 }

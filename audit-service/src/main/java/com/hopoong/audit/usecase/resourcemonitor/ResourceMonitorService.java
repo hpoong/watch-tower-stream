@@ -8,4 +8,6 @@ import java.io.IOException;
 public interface ResourceMonitorService {
 
     void insertSystemResourceMetrics(KafkaCommonMessage<SystemResourceMetricsMessage> message) throws IOException;
+
+    boolean existsByTraceId(String traceId) throws IOException;
 }
