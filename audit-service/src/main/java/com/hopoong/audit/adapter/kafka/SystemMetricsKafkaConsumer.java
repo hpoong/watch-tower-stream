@@ -46,8 +46,6 @@ public class SystemMetricsKafkaConsumer {
             KafkaCommonMessage.Header header = message.getHeader();
             String server = body.serverName();
 
-            resourceMonitorService.insertSystemResourceMetrics(message);
-
             // 출력용
             serverMessageMap
                     .computeIfAbsent(server, k -> Collections.synchronizedList(new ArrayList<>()))
@@ -72,6 +70,8 @@ public class SystemMetricsKafkaConsumer {
                 // 강제 에러 처리
                 throw new KafkaProcessingException(record.topic(), record.partition(), record.offset(), header.getTraceId());
             }
+
+            resourceMonitorService.insertSystemResourceMetrics(message);
 
             ack.acknowledge();
 
