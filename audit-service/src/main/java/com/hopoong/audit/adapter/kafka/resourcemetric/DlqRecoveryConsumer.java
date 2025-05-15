@@ -1,4 +1,4 @@
-package com.hopoong.audit.adapter.kafka;
+package com.hopoong.audit.adapter.kafka.resourcemetric;
 
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -40,7 +40,7 @@ public class DlqRecoveryConsumer {
         // 정상 메시지만 딜레이 후 전송
         branches[0]
                 .peek((key, value) -> log.info("DLQ 재처리 대상: {}", key))
-                .transform(() -> new DelayedForwarder(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC + ".TEST", Duration.ofSeconds(5)));
+                .transform(() -> new DelayedForwarder(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC + ".REPROCESS", Duration.ofSeconds(5)));
 
         // 중복된 메시지는 DB 저장 또는 로그 출력
         branches[1]

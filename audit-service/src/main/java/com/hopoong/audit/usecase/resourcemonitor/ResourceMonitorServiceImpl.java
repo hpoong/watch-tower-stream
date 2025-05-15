@@ -23,7 +23,6 @@ public class ResourceMonitorServiceImpl implements ResourceMonitorService {
     @Override
     public void insertSystemResourceMetrics(KafkaCommonMessage<SystemResourceMetricsMessage> message) throws IOException {
 
-
         SystemMetricDocument metric = SystemMetricDocument.builder()
                 .resourceName(message.getBody().resourceName())
                 .usagePercent(message.getBody().usagePercent())
