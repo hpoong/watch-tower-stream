@@ -1,5 +1,9 @@
 package com.hopoong.audit.common.kafka;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hopoong.core.message.common.KafkaCommonMessage;
+import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -22,6 +26,7 @@ public class DelayedForwarder implements Transformer<String, String, KeyValue<St
     private KafkaProducer<String, String> producer;
     private ProcessorContext context;
     private final Map<String, String> scheduledMessages = new HashMap<>();
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     public DelayedForwarder(String targetTopic, Duration delay) {
         this.targetTopic = targetTopic;
@@ -49,7 +54,13 @@ public class DelayedForwarder implements Transformer<String, String, KeyValue<St
 
     @Override
     public KeyValue<String, String> transform(String key, String value) {
-        scheduledMessages.put(key, value);
+        try {
+            String cleanedJson = objectMapper.writeValueAsString(value);
+            scheduledMessages.put(key, cleanedJson);
+        } catch (Exception e) {
+            throw new RuntimeException("DelayedForwarder 변환 실패: " + e.getMessage(), e);
+        }
+
         return null;
     }
 
