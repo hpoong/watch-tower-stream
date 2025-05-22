@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
 import org.springframework.context.annotation.Bean;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -27,6 +28,8 @@ public class DlqRecoveryConsumer {
 
     private final ResourceMonitorService resourceMonitorService;
 
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
     @Bean
     public KStream<String, String> dlqDelayStream(StreamsBuilder builder) {
 
@@ -40,7 +43,7 @@ public class DlqRecoveryConsumer {
         // 정상 메시지만 딜레이 후 전송
         branches[0]
                 .peek((key, value) -> log.info("DLQ 재처리 대상: {}", key))
-                .transform(() -> new DelayedForwarder(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC + ".REPROCESS", Duration.ofSeconds(5)));
+                .transform(() -> new DelayedForwarder(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC + ".REPROCESS", Duration.ofSeconds(5), kafkaTemplate));
 
         // 중복된 메시지는 DB 저장 또는 로그 출력
         branches[1]

@@ -56,9 +56,9 @@ public class SystemMetricsKafkaConsumer {
                         .sorted(Comparator.comparing(SystemResourceMetricsMessage::resourceName))
                         .toList();
 
-                log.info("[SEQ-CHECK] {}:", server);
+                log.debug("[SEQ-CHECK] {}:", server);
                 for (SystemResourceMetricsMessage m : sortedList) {
-                    log.info("  → [{}] {}% ({}) @ {}",
+                    log.debug("  → [{}] {}% ({}) @ {}",
                             m.resourceName(),
                             String.format("%.3f", m.usagePercent()),
                             m.alertLevel(),
@@ -78,7 +78,7 @@ public class SystemMetricsKafkaConsumer {
         } catch (Exception e) {
             KafkaCommonMessage.Header header = extractHeaderSafely(record);
             log.error("[CONSUMER ERROR] Failed to process message", e);
-            log.error("  ↳ partition={}, offset={}, traceId={}, topic={}",
+            log.debug("  ↳ partition={}, offset={}, traceId={}, topic={}",
                     record.partition(),
                     record.offset(),
                     Optional.ofNullable(header)
