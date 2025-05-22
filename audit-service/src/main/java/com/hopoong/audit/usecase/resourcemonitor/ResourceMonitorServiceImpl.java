@@ -1,8 +1,13 @@
 package com.hopoong.audit.usecase.resourcemonitor;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
+import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import com.google.common.collect.Lists;
 import com.hopoong.audit.persistence.document.SystemMetricDocument;
 import com.hopoong.core.message.common.KafkaCommonMessage;
 import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
@@ -11,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -50,5 +57,49 @@ public class ResourceMonitorServiceImpl implements ResourceMonitorService {
 
         return response.hits().total().value() > 0;
     }
+
+    @Override
+    public void insertSystemResourceMetricsBulk(List<KafkaCommonMessage<SystemResourceMetricsMessage>> messages) throws IOException {
+        List<List<KafkaCommonMessage<SystemResourceMetricsMessage>>> partitions = Lists.partition(messages, 1000);
+
+        for (List<KafkaCommonMessage<SystemResourceMetricsMessage>> batch : partitions) {
+            List<BulkOperation> operations = new ArrayList<>();
+
+            for (KafkaCommonMessage<SystemResourceMetricsMessage> message : batch) {
+                SystemMetricDocument metric = SystemMetricDocument.builder()
+                        .resourceName(message.getBody().resourceName())
+                        .usagePercent(message.getBody().usagePercent())
+                        .alertLevel(message.getBody().alertLevel())
+                        .serverName(message.getBody().serverName())
+                        .ipAddress(message.getBody().ipAddress())
+                        .timestamp(message.getHeader().getTimestamp())
+                        .traceId(message.getHeader().getTraceId())
+                        .build();
+
+                operations.add(BulkOperation.of(op -> op
+                        .index(idx -> idx
+                                .index("system_metrics")
+                                .document(metric)
+                        )
+                ));
+            }
+
+            BulkRequest request = new BulkRequest.Builder()
+                    .operations(operations)
+                    .build();
+
+            BulkResponse response = elasticsearchClient.bulk(request);
+
+            if (response.errors()) {
+                for (BulkResponseItem item : response.items()) {
+                    if (item.error() != null) {
+                        log.error("[Bulk] Failed item: {}", item.error().reason());
+                    }
+                }
+            }
+        }
+    }
+
+
 
 }

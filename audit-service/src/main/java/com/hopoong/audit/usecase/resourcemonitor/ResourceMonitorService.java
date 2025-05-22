@@ -4,10 +4,13 @@ import com.hopoong.core.message.common.KafkaCommonMessage;
 import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
 
 import java.io.IOException;
+import java.util.List;
 
 public interface ResourceMonitorService {
 
     void insertSystemResourceMetrics(KafkaCommonMessage<SystemResourceMetricsMessage> message) throws IOException;
 
     boolean existsByTraceId(String traceId) throws IOException;
+
+    void insertSystemResourceMetricsBulk(List<KafkaCommonMessage<SystemResourceMetricsMessage>> messages) throws IOException;
 }

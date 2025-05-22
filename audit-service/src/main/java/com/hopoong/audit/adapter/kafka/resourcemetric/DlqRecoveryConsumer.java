@@ -42,8 +42,8 @@ public class DlqRecoveryConsumer {
 
         // 정상 메시지만 딜레이 후 전송
         branches[0]
-                .peek((key, value) -> log.info("DLQ 재처리 대상: {}", key))
-                .transform(() -> new DelayedForwarder(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC + ".REPROCESS", Duration.ofSeconds(5), kafkaTemplate));
+            .peek((key, value) -> log.info(":::::::::::::::::::::: {} Consume", KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC + ".DLQ"))
+            .transform(() -> new DelayedForwarder(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC + ".REPROCESS", Duration.ofSeconds(5), kafkaTemplate));
 
         // 중복된 메시지는 DB 저장 또는 로그 출력
         branches[1]
