@@ -25,7 +25,7 @@ public class ReProcesKafkaConsumer {
         KStream<String, String> stream = builder.stream(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC + ".REPROCESS");
         stream
             .peek((key, value) -> log.info(":::::::::::::::::::::: {} Consume", KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC + ".REPROCESS"))
-            .transform(() -> new BatchedDbWriterTransformer(3, objectMapper, resourceMonitorService));
+            .transform(() -> new BatchedDbWriterTransformer(10000, objectMapper, resourceMonitorService));
 
         return stream;
     }
