@@ -1,18 +1,23 @@
 package com.hopoong.audit.usecase.resourcemonitor;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.InlineGet;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import co.elastic.clients.json.JsonData;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.hopoong.audit.persistence.document.SystemMetricDocument;
 import com.hopoong.core.message.common.KafkaCommonMessage;
 import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
+import com.hopoong.core.topic.KafkaTopicManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -26,6 +31,8 @@ import java.util.Map;
 public class ResourceMonitorServiceImpl implements ResourceMonitorService {
 
     private final ElasticsearchClient elasticsearchClient;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
     public void insertSystemResourceMetrics(KafkaCommonMessage<SystemResourceMetricsMessage> message) throws IOException {
@@ -91,9 +98,14 @@ public class ResourceMonitorServiceImpl implements ResourceMonitorService {
             BulkResponse response = elasticsearchClient.bulk(request);
 
             if (response.errors()) {
-                for (BulkResponseItem item : response.items()) {
+                List<BulkResponseItem> items = response.items();
+                for (int i = 0; i < items.size(); i++) {
+                    BulkResponseItem item = items.get(i);
+
                     if (item.error() != null) {
-                        log.error("[Bulk] Failed item: {}", item.error().reason());
+                        KafkaCommonMessage<SystemResourceMetricsMessage> originalMessage = batch.get(i);
+                        String payload = objectMapper.writeValueAsString(originalMessage);
+                        kafkaTemplate.send(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC + ".ERROR", payload);
                     }
                 }
             }

@@ -72,9 +72,8 @@ public class BatchedDbWriterTransformer implements Transformer<String, String, K
                     flushBuffer();
                 }
             }
-
         } catch (Exception e) {
-            log.error("[Transformer] Failed to process message: {}", e.getMessage(), e);
+            log.error("[BatchedDbWriterTransformer Transformer] JSON 파싱 실패. value: {}, error: {}", value, e.getMessage());
         }
         return null;
     }
@@ -96,8 +95,7 @@ public class BatchedDbWriterTransformer implements Transformer<String, String, K
                     resourceMonitorService.insertSystemResourceMetricsBulk(new ArrayList<>(buffer));
                     buffer.clear();
                 } catch (IOException e) {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
+                    log.error("[BatchedDbWriterTransformer FlushBuffer] 네트워크 또는 시스템 오류 {}", e.getMessage());
                 }
             }
         }
