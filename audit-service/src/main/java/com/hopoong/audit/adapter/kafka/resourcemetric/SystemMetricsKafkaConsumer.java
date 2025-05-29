@@ -77,7 +77,7 @@ public class SystemMetricsKafkaConsumer {
 
         } catch (Exception e) {
             KafkaCommonMessage.Header header = extractHeaderSafely(record);
-            log.error("[CONSUMER ERROR] Failed to process message", e);
+            log.error("[CONSUMER ERROR] Failed to process orgMessage", e);
             log.debug("  ↳ partition={}, offset={}, traceId={}, topic={}",
                     record.partition(),
                     record.offset(),

@@ -1,18 +1,17 @@
 package com.hopoong.audit.usecase.resourcemonitor;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.InlineGet;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
-import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.hopoong.audit.persistence.document.SystemMetricDocument;
 import com.hopoong.core.message.common.KafkaCommonMessage;
+import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsErrorMessage;
 import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
 import com.hopoong.core.topic.KafkaTopicManager;
 import lombok.RequiredArgsConstructor;
@@ -104,8 +103,19 @@ public class ResourceMonitorServiceImpl implements ResourceMonitorService {
 
                     if (item.error() != null) {
                         KafkaCommonMessage<SystemResourceMetricsMessage> originalMessage = batch.get(i);
-                        String payload = objectMapper.writeValueAsString(originalMessage);
-                        kafkaTemplate.send(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC + ".ERROR", payload);
+
+                        SystemResourceMetricsErrorMessage systemResourceMetricsErrorMessage = SystemResourceMetricsErrorMessage.builder()
+                                .orgMessage(originalMessage.getBody())
+                                .errorType("INSERT")
+                                .build();
+
+                        KafkaCommonMessage<?> kafkaMessage = KafkaCommonMessage.builder()
+                                .header(originalMessage.getHeader())
+                                .body(systemResourceMetricsErrorMessage)
+                                .build();
+
+                        String payload = objectMapper.writeValueAsString(kafkaMessage);
+                        kafkaTemplate.send(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_ERROR_TOPIC, payload);
                     }
                 }
             }

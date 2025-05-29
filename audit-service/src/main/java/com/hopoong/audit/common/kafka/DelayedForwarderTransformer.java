@@ -10,7 +10,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DelayedForwarder implements Transformer<String, String, KeyValue<String, String>> {
+public class DelayedForwarderTransformer implements Transformer<String, String, KeyValue<String, String>> {
 
     private final String targetTopic;
     private final Duration delay;
@@ -18,7 +18,7 @@ public class DelayedForwarder implements Transformer<String, String, KeyValue<St
     private ProcessorContext context;
     private final Map<String, String> scheduledMessages = new HashMap<>();
 
-    public DelayedForwarder(String targetTopic, Duration delay, KafkaTemplate<String, Object> kafkaTemplate) {
+    public DelayedForwarderTransformer(String targetTopic, Duration delay, KafkaTemplate<String, Object> kafkaTemplate) {
         this.targetTopic = targetTopic;
         this.delay = delay;
         this.kafkaTemplate = kafkaTemplate;
