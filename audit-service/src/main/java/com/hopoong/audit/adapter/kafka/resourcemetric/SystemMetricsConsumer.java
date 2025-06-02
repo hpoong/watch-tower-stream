@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class SystemMetricsKafkaConsumer {
+public class SystemMetricsConsumer {
 
     private final ObjectMapper objectMapper;
 

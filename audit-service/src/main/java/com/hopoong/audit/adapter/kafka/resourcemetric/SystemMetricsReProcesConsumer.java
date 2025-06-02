@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ReProcesKafkaConsumer {
+public class SystemMetricsReProcesConsumer {
 
     private final ObjectMapper objectMapper;
     private final ResourceMonitorService resourceMonitorService;

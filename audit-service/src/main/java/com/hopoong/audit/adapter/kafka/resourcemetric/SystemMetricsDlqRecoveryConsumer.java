@@ -22,7 +22,7 @@ import java.time.Duration;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DlqRecoveryConsumer {
+public class SystemMetricsDlqRecoveryConsumer {
 
 
     private final ObjectMapper objectMapper;
@@ -46,7 +46,7 @@ public class DlqRecoveryConsumer {
             .peek((key, value) -> log.info(":::::::::::::::::::::: {} Consume", KafkaTopicManager.SYSTEM_RESOURCE_METRICS_DLQ_TOPIC))
             .transform(() -> new DelayedForwarderTransformer(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC, Duration.ofSeconds(5), kafkaTemplate));
 
-        // 중복된 메시지는 DB 저장 또는 로그 출력
+        // 중복된 메시지는 ERROR 토픽으로 전송
         branches[1]
             .peek((key, value) -> log.warn("중복 메시지 감지 → DB 보관 대상: {}", key))
             .transform(() -> new ErrorForwarderTransformer(kafkaTemplate, objectMapper, KafkaTopicManager.SYSTEM_RESOURCE_METRICS_ERROR_TOPIC));
