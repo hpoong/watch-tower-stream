@@ -26,54 +26,27 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SystemMetricsErrorConsumer {
 
-    private final ObjectMapper objectMapper;
-
-//    @Bean
-//    public Serde<KafkaCommonMessage<SystemResourceMetricsMessage>> originalSerde(ObjectMapper objectMapper) {
-//        JsonSerializer<KafkaCommonMessage<SystemResourceMetricsMessage>> serializer = new JsonSerializer<>(objectMapper);
-//        JsonDeserializer<KafkaCommonMessage<SystemResourceMetricsMessage>> deserializer =
-//                new JsonDeserializer<>(KafkaCommonMessage.class, objectMapper);
-//        return Serdes.serdeFrom(serializer, deserializer);
-//    }
-//
+//    private final ObjectMapper objectMapper;
 //
 //    @Bean
-//    public Serde<KafkaCommonMessage<SystemResourceMetricsErrorMessage>> errorSerde(ObjectMapper objectMapper) {
-//        JsonSerializer<KafkaCommonMessage<SystemResourceMetricsErrorMessage>> serializer = new JsonSerializer<>(objectMapper);
-//        JsonDeserializer<KafkaCommonMessage<SystemResourceMetricsErrorMessage>> deserializer =
-//                new JsonDeserializer<>(KafkaCommonMessage.class, objectMapper);
-//        return Serdes.serdeFrom(serializer, deserializer);
-//    }
+//    public KStream<String, KafkaCommonMessage<SystemResourceMetricsErrorMessage>> systemMetricsErrorStream(StreamsBuilder builder) {
 //
-//    @Bean
-//    public Serde<EnrichedErrorMessage> enrichedSerde(ObjectMapper objectMapper) {
-//        JsonSerializer<EnrichedErrorMessage> serializer = new JsonSerializer<>(objectMapper);
-//        JsonDeserializer<EnrichedErrorMessage> deserializer = new JsonDeserializer<>(EnrichedErrorMessage.class, objectMapper);
-//        return Serdes.serdeFrom(serializer, deserializer);
-//    }
+//        // 원본 KTable 구성
+//        KTable<String, KafkaCommonMessage<SystemResourceMetricsMessage>> originalTable = builder.table(
+//                KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC,
+//                Consumed.with(Serdes.String(), originalSerde())
+//        );
 //
-//    @Builder
-//    public record EnrichedErrorMessage(
-//            KafkaCommonMessage<SystemResourceMetricsMessage> original,
-//            KafkaCommonMessage<SystemResourceMetricsErrorMessage> error
-//    ) {}
+//        // ERROR KStream 구성
+//        KStream<String, KafkaCommonMessage<SystemResourceMetricsErrorMessage>> errorStream = builder.stream(
+//                KafkaTopicManager.SYSTEM_RESOURCE_METRICS_ERROR_TOPIC,
+//                Consumed.with(Serdes.String(), errorSerde())
+//        );
 //
+//        // ERROR Stream 로그 출력
+//        errorStream.peek((k, v) -> log.info("ERROR STREAM - Key: {}, Value: {}", k, v));
 //
-//    @Bean
-//    public KStream<String, KafkaCommonMessage<SystemResourceMetricsErrorMessage>> systemMetricsErrorStream(StreamsBuilder builder, ObjectMapper objectMapper) {
-//
-//        // 원본 KTable
-//        KTable<String, KafkaCommonMessage<SystemResourceMetricsMessage>> originalTable = builder
-//                .table(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC, Consumed.with(Serdes.String(), originalSerde(objectMapper)));
-//
-//        // ERROR Stream
-//        KStream<String, KafkaCommonMessage<SystemResourceMetricsErrorMessage>> errorStream = builder
-//                .stream(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_ERROR_TOPIC, Consumed.with(Serdes.String(), errorSerde(objectMapper)));
-//
-//        // Logging
-//        errorStream.peek((k, v) -> System.out.println("ERROR : " + v));
-//
-//        // JOIN
+//        // KStream + KTable JOIN (EnrichedErrorMessage 생성)
 //        KStream<String, EnrichedErrorMessage> enrichedErrorStream = errorStream.join(
 //                originalTable,
 //                (error, original) -> EnrichedErrorMessage.builder()
@@ -82,15 +55,49 @@ public class SystemMetricsErrorConsumer {
 //                        .build()
 //        );
 //
-//        // Logging enriched
-//        enrichedErrorStream.peek((k, v) -> System.out.println("ENRICHED : " + v));
+//        // ENRICHED Stream 로그 출력
+//        enrichedErrorStream.peek((k, v) -> log.info("ENRICHED STREAM - Key: {}, Value: {}", k, v));
 //
-//        // Output to ENRICHED Topic
-//        enrichedErrorStream.to(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_ERROR_ENRICHED_TOPIC,
-//                Produced.with(Serdes.String(), enrichedSerde(objectMapper)));
+//        // ENRICHED Topic 으로 전송
+//        enrichedErrorStream.to(
+//                KafkaTopicManager.SYSTEM_RESOURCE_METRICS_ERROR_ENRICHED_TOPIC,
+//                Produced.with(Serdes.String(), enrichedSerde())
+//        );
 //
 //        return errorStream;
 //    }
-
+//
+//    // 원본 Serde
+//    @Bean
+//    public Serde<KafkaCommonMessage<SystemResourceMetricsMessage>> originalSerde() {
+//        JsonSerializer<KafkaCommonMessage<SystemResourceMetricsMessage>> serializer = new JsonSerializer<>(objectMapper);
+//        JsonDeserializer<KafkaCommonMessage<SystemResourceMetricsMessage>> deserializer =
+//                new JsonDeserializer<>(KafkaCommonMessage.class, objectMapper);
+//        return Serdes.serdeFrom(serializer, deserializer);
+//    }
+//
+//    // ERROR Serde
+//    @Bean
+//    public Serde<KafkaCommonMessage<SystemResourceMetricsErrorMessage>> errorSerde() {
+//        JsonSerializer<KafkaCommonMessage<SystemResourceMetricsErrorMessage>> serializer = new JsonSerializer<>(objectMapper);
+//        JsonDeserializer<KafkaCommonMessage<SystemResourceMetricsErrorMessage>> deserializer =
+//                new JsonDeserializer<>(KafkaCommonMessage.class, objectMapper);
+//        return Serdes.serdeFrom(serializer, deserializer);
+//    }
+//
+//    // ENRICHED Serde
+//    @Bean
+//    public Serde<EnrichedErrorMessage> enrichedSerde() {
+//        JsonSerializer<EnrichedErrorMessage> serializer = new JsonSerializer<>(objectMapper);
+//        JsonDeserializer<EnrichedErrorMessage> deserializer = new JsonDeserializer<>(EnrichedErrorMessage.class, objectMapper);
+//        return Serdes.serdeFrom(serializer, deserializer);
+//    }
+//
+//    // JOIN 결과 클래스 (JOIN 용도 전용)
+//    @Builder
+//    public record EnrichedErrorMessage(
+//            KafkaCommonMessage<SystemResourceMetricsMessage> original,
+//            KafkaCommonMessage<SystemResourceMetricsErrorMessage> error
+//    ) {}
 }
 
