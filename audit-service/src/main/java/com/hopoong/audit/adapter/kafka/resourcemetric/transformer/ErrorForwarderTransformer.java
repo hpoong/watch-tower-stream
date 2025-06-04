@@ -1,4 +1,4 @@
-package com.hopoong.audit.common.kafka;
+package com.hopoong.audit.adapter.kafka.resourcemetric.transformer;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

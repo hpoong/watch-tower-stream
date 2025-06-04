@@ -1,7 +1,7 @@
-package com.hopoong.audit.adapter.kafka.resourcemetric;
+package com.hopoong.audit.adapter.kafka.resourcemetric.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hopoong.audit.common.kafka.BatchedDbWriterTransformer;
+import com.hopoong.audit.adapter.kafka.resourcemetric.transformer.BatchedDbWriterTransformer;
 import com.hopoong.audit.usecase.resourcemonitor.ResourceMonitorService;
 import com.hopoong.core.topic.KafkaTopicManager;
 import lombok.RequiredArgsConstructor;

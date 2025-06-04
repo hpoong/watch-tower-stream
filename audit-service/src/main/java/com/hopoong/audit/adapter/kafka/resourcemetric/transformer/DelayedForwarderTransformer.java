@@ -1,4 +1,4 @@
-package com.hopoong.audit.common.kafka;
+package com.hopoong.audit.adapter.kafka.resourcemetric.transformer;
 
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.Transformer;

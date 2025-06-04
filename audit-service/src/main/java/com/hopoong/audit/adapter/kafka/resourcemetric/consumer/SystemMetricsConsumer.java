@@ -1,4 +1,4 @@
-package com.hopoong.audit.adapter.kafka.resourcemetric;
+package com.hopoong.audit.adapter.kafka.resourcemetric.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;

@@ -1,10 +1,10 @@
-package com.hopoong.audit.adapter.kafka.resourcemetric;
+package com.hopoong.audit.adapter.kafka.resourcemetric.consumer;
 
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hopoong.audit.common.kafka.DelayedForwarderTransformer;
-import com.hopoong.audit.common.kafka.ErrorForwarderTransformer;
+import com.hopoong.audit.adapter.kafka.resourcemetric.transformer.DelayedForwarderTransformer;
+import com.hopoong.audit.adapter.kafka.resourcemetric.transformer.ErrorForwarderTransformer;
 import com.hopoong.audit.usecase.resourcemonitor.ResourceMonitorService;
 import com.hopoong.core.message.common.KafkaCommonMessage;
 import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
@@ -48,7 +48,7 @@ public class SystemMetricsDlqRecoveryConsumer {
 
         // 중복된 메시지는 ERROR 토픽으로 전송
         branches[1]
-            .peek((key, value) -> log.warn("중복 메시지 감지 → DB 보관 대상: {}", key))
+            .peek((key, value) -> log.info("중복 메시지 감지 → DB 보관 대상: {}", key))
             .transform(() -> new ErrorForwarderTransformer(kafkaTemplate, objectMapper, KafkaTopicManager.SYSTEM_RESOURCE_METRICS_ERROR_TOPIC));
 
         return dlqStream;
