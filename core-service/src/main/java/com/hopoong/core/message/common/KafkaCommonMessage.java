@@ -2,12 +2,14 @@ package com.hopoong.core.message.common;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
 
 @Getter
 @Builder
+@ToString
 public class KafkaCommonMessage<T> {
     private Header header;
     private T body;

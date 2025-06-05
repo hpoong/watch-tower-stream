@@ -47,7 +47,9 @@ public class ErrorForwarderTransformer implements Transformer<String, String, Ke
                     .build();
 
             String payload = objectMapper.writeValueAsString(kafkaMessage);
-            kafkaTemplate.send(targetTopic, payload);
+            String targetKey = originalMessage.getBody().serverName();
+
+            kafkaTemplate.send(targetTopic, targetKey, payload);
 
         } catch (Exception e) {
             log.error("[ErrorForwarderTransformer Transformer] JSON 파싱 실패. value: {}, error: {}", value, e.getMessage());

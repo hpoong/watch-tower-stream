@@ -68,6 +68,7 @@ public class SystemMetricsConsumer {
                 serverMessageMap.get(server).clear();
 
                 // 강제 에러 처리
+                resourceMonitorService.insertSystemResourceMetrics(message);
                 throw new KafkaProcessingException(record.topic(), record.partition(), record.offset(), header.getTraceId());
             }
 
