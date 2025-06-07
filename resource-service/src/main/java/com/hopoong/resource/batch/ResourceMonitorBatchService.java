@@ -1,8 +1,7 @@
 package com.hopoong.resource.batch;
 
-import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
 import com.hopoong.core.util.RandomUtil;
-import com.hopoong.resource.app.resourcemonitor.ResourceMonitorService;
+import com.hopoong.resource.usecase.resourcemonitor.ResourceMonitorService;
 import com.hopoong.resource.event.ResourceMonitorEventHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;

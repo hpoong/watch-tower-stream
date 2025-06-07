@@ -1,4 +1,4 @@
-package com.hopoong.resource.app.resourcemonitor;
+package com.hopoong.resource.usecase.resourcemonitor;
 
 public interface ResourceMonitorService {
 
