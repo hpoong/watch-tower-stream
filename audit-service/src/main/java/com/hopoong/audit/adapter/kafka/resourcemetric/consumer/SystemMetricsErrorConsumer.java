@@ -1,6 +1,5 @@
 package com.hopoong.audit.adapter.kafka.resourcemetric.consumer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hopoong.audit.common.serde.GenericJsonSerde;
@@ -28,7 +27,7 @@ import org.springframework.context.annotation.Configuration;
 public class SystemMetricsErrorConsumer {
 
     @Bean
-    public KTable<String, KafkaCommonMessage<SystemResourceMetricsMessage>> originalTable(
+    public KTable<String, KafkaCommonMessage<SystemResourceMetricsMessage>> systemMetricsErrorStream(
             StreamsBuilder builder,
             ObjectMapper objectMapper
     ) {
@@ -49,13 +48,7 @@ public class SystemMetricsErrorConsumer {
                     String serverName = value.getBody().originalMessage().serverName();
                     String errorType = value.getBody().errorType();
                     String newKey = serverName + "|" + errorType;
-                    String json = null;
-                    try {
-                        json = objectMapper.writeValueAsString(value);
-                    } catch (JsonProcessingException e) {
-                        throw new RuntimeException(e);
-                    }
-                    return KeyValue.pair(newKey, json);
+                    return KeyValue.pair(newKey, ""); // count 목적이기에 빈값 처리
                 }
             )
             .groupByKey(Grouped.with(Serdes.String(), Serdes.String()))

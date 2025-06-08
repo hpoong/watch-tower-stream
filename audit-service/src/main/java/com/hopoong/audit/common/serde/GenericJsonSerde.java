@@ -50,7 +50,8 @@ public class GenericJsonSerde<T> implements Serde<T> {
                     String jsonString = objectMapper.readValue(value, String.class);
                     return objectMapper.readValue(jsonString, typeReference);
                 } catch (Exception e) {
-                    throw new RuntimeException("JSON deserialization failed", e);
+//                    throw new RuntimeException("JSON deserialization failed", e);
+                    return null;
                 }
             }
         };
