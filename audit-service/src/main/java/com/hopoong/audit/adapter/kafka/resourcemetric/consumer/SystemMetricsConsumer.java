@@ -16,9 +16,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Produced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
@@ -119,68 +121,51 @@ public class SystemMetricsConsumer {
 
         // resourceMetricsStream → KEY 재매핑 (serverName:resourceName) 으로 맞추기
         KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> keyedResourceStream = resourceMetricsStream
+                .filter((key, value) -> value != null && value.getBody() != null)
                 .selectKey((key, value) -> {
                     String serverName = value.getBody().serverName();
-                    String resourceName = value.getBody().resourceName(); // resourceName 과 동일 의미
+                    String resourceName = value.getBody().resourceName();
                     return serverName + ":" + resourceName;
                 });
 
-        keyedResourceStream.foreach((k, v) -> System.out.println(">>>>>>>>>>>> 3 " + k));
-
-
+        keyedResourceStream.foreach((k, v) -> System.out.println(">>>>>>>>>>>> 3  key = " + k + " value = " + v));
 
         // system-threshold : KTable
-        GenericJsonSerde<KafkaCommonMessage<SystemThresholdMessage>> thresholdSerde =
-                new GenericJsonSerde<>(objectMapper, new TypeReference<KafkaCommonMessage<SystemThresholdMessage>>() {});
-
-        KTable<String, KafkaCommonMessage<SystemThresholdMessage>> thresholdKTable = builder.table(
+        KTable<String, String> thresholdKTable = builder.table(
                 KafkaTopicManager.SYSTEM_THRESHOLD_TOPIC,
-                Consumed.with(Serdes.String(), thresholdSerde)
+                Consumed.with(Serdes.String(), Serdes.String())
         );
 
-        thresholdKTable.toStream().foreach((k, v) -> System.out.println(">>>>>>>>>>>> 2  key = " + k + " value = " + v));
+        KTable<String, KafkaCommonMessage<SystemThresholdMessage>> parsedThresholdKTable = thresholdKTable.mapValues(value -> {
+            try {
+                String jsonString = objectMapper.readValue(value, String.class);
+                return objectMapper.readValue(jsonString, new TypeReference<KafkaCommonMessage<SystemThresholdMessage>>() {});
+            } catch (Exception e) {
+                log.error("Failed to deserialize threshold message: {}", value, e);
+                return null;
+            }
+        });
+
+        parsedThresholdKTable.toStream().foreach((k, v) -> System.out.println(">>>>>>>>>>>> 2  key = " + k + " value = " + v));
 
         // JOIN 수행
         KStream<String, String> alertStream = keyedResourceStream.join(
-            thresholdKTable,
+            parsedThresholdKTable,
             (resource, threshold) -> {
-//                if (threshold == null || threshold.getBody() == null) {
-//                    return null;
-//                }
-                double usagePercent = resource.getBody().usagePercent();
-                double thresholdValue = threshold.getBody().thresholdValue();
-
-                if (usagePercent > thresholdValue) {
-                    // 임계값 초과 → 알람 이벤트 생성 (여기서는 String 으로 예시)
-                    return String.format("ALERT! server=%s resource=%s usage=%.2f%% threshold=%.2f%%",
-                            resource.getBody().serverName(),
-                            resource.getBody().resourceName(),
-                            usagePercent,
-                            thresholdValue
-                    );
-                } else {
-                    // 임계 미만 → 알람 없음 (null 리턴 or "OK" 등으로 처리)
-                    return null;
-                }
+                System.out.println(">>>>>>>>>>>>>>>>>>> ??? ");
+                return "";
             }
-        ).filter((key, value) -> value != null); // null 제거 (알람만 남김)
+        ).filter((key, value) -> value != null);
 
-//
-//        // 알람 전송 → 다른 Kafka Topic 으로 보내기 (ex: SYSTEM_ALERT_TOPIC)
-////        alertStream.to(KafkaTopicManager.SYSTEM_ALERT_TOPIC, Produced.with(Serdes.String(), Serdes.String()));
-//
+
         alertStream
             .foreach((key, value) -> {
                 log.info("==================================================");
                 log.info("[alertStream] key = {}, value = {}", key, value);
                 log.info("==================================================");
             });
-//
-//        return alertStream;
-
 
         return null;
-
     }
 
 
