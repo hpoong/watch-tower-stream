@@ -38,7 +38,7 @@ public class SystemMetricsKafkaPublisher implements Consumer<SystemResourceMetri
                 .build();
 
         String payload = objectMapper.writeValueAsString(kafkaMessage);
-        String partitionKey = message.serverName();
+        String partitionKey = message.serverName() + ":" + message.resourceName();
         kafkaTemplate.send(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC, partitionKey, payload);
     }
 }

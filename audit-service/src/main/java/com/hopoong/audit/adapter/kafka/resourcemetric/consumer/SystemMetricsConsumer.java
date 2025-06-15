@@ -106,7 +106,7 @@ public class SystemMetricsConsumer {
     }
 
     @Bean
-    public KStream<String, String> systemMetricsThresholdStream(StreamsBuilder builder) {
+    public KStream<String, String> systemMetricsThresholdAlertStream(StreamsBuilder builder) {
 
         // system-resource-metrics : KStream
         GenericJsonSerde<KafkaCommonMessage<SystemResourceMetricsMessage>> resourceSerde =
@@ -117,18 +117,7 @@ public class SystemMetricsConsumer {
                 Consumed.with(Serdes.String(), resourceSerde)
         );
 
-        resourceMetricsStream.foreach((k, v) -> System.out.println(">>>>>>>>>>>> 1 " + v.getBody().resourceName()));
-
-        // resourceMetricsStream → KEY 재매핑 (serverName:resourceName) 으로 맞추기
-        KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> keyedResourceStream = resourceMetricsStream
-                .filter((key, value) -> value != null && value.getBody() != null)
-                .selectKey((key, value) -> {
-                    String serverName = value.getBody().serverName();
-                    String resourceName = value.getBody().resourceName();
-                    return serverName + ":" + resourceName;
-                });
-
-        keyedResourceStream.foreach((k, v) -> System.out.println(">>>>>>>>>>>> 3  key = " + k + " value = " + v));
+//        resourceMetricsStream.foreach((k, v) -> log.info(">>>>>>>>>>>> 1  key = {} value = {}", k, v));
 
         // system-threshold : KTable
         KTable<String, String> thresholdKTable = builder.table(
@@ -146,14 +135,16 @@ public class SystemMetricsConsumer {
             }
         });
 
-        parsedThresholdKTable.toStream().foreach((k, v) -> System.out.println(">>>>>>>>>>>> 2  key = " + k + " value = " + v));
+        parsedThresholdKTable.toStream().foreach((k, v) -> log.info(">>>>>>>>>>>> 2  key = {} value = {}", k, v));
 
         // JOIN 수행
-        KStream<String, String> alertStream = keyedResourceStream.join(
+        KStream<String, Double> alertStream = resourceMetricsStream.join(
             parsedThresholdKTable,
             (resource, threshold) -> {
-                System.out.println(">>>>>>>>>>>>>>>>>>> ??? ");
-                return "";
+                if(resource.getBody().usagePercent() > threshold.getBody().thresholdValue()) {
+                    return resource.getBody().usagePercent();
+                }
+                return null;
             }
         ).filter((key, value) -> value != null);
 
