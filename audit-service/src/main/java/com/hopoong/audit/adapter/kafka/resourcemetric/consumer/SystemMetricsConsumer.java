@@ -3,6 +3,7 @@ package com.hopoong.audit.adapter.kafka.resourcemetric.consumer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hopoong.audit.adapter.kafka.resourcemetric.model.AvgMax;
 import com.hopoong.audit.common.exception.KafkaProcessingException;
 import com.hopoong.audit.common.serde.GenericJsonSerde;
 import com.hopoong.audit.usecase.resourcemonitor.ResourceMonitorService;
@@ -17,16 +18,14 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
-import org.apache.kafka.streams.kstream.Consumed;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.KTable;
-import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.kstream.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -155,6 +154,46 @@ public class SystemMetricsConsumer {
                 log.info("[alertStream] key = {}, value = {}", key, value);
                 log.info("==================================================");
             });
+
+        return null;
+    }
+
+
+    @Bean
+    public KStream<String, String> systemMetricsThresholdAvgMaxOneMinStream(StreamsBuilder builder) {
+
+        // system-resource-metrics : KStream
+        GenericJsonSerde<KafkaCommonMessage<SystemResourceMetricsMessage>> resourceSerde =
+                new GenericJsonSerde<>(objectMapper, new TypeReference<KafkaCommonMessage<SystemResourceMetricsMessage>>() {});
+
+        KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> resourceMetricsStream = builder.stream(
+                KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC,
+                Consumed.with(Serdes.String(), resourceSerde)
+        );
+
+        KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> cpuStream =
+                resourceMetricsStream.filter((key, value) ->
+                        value.getBody().resourceName().equalsIgnoreCase("CPU")
+                );
+
+
+        TimeWindows oneMinute = TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1));
+        TimeWindows fiveMinutes = TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(5));
+        TimeWindows tenMinutes = TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(10));
+
+
+//        KTable<Windowed<String>, AvgMax> avgMaxOneMin = cpuStream
+//            .groupByKey()
+//            .windowedBy(oneMinute)
+//            .aggregate(
+//                    AvgMax::new,
+//                    (key, value, aggregate) -> aggregate.add(value.getBody().usagePercent()),
+//                    Materialized.with(Serdes.String(), new AvgMaxSerde())
+//            );
+//
+//        avgMaxOneMin.toStream().foreach((windowedKey, value) -> {
+//            log.info("[1분] CPU 평균 = {}, 최대 = {}", value.avg(), value.max());
+//        });
 
         return null;
     }
