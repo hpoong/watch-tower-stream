@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hopoong.audit.adapter.kafka.resourcemetric.model.AvgMax;
 import com.hopoong.audit.common.exception.KafkaProcessingException;
+import com.hopoong.audit.common.serde.AvgMaxSerde;
 import com.hopoong.audit.common.serde.GenericJsonSerde;
 import com.hopoong.audit.usecase.resourcemonitor.ResourceMonitorService;
 import com.hopoong.core.message.common.KafkaCommonMessage;
@@ -181,19 +182,18 @@ public class SystemMetricsConsumer {
         TimeWindows fiveMinutes = TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(5));
         TimeWindows tenMinutes = TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(10));
 
+        KTable<Windowed<String>, AvgMax> avgMaxOneMin = cpuStream
+            .groupByKey()
+            .windowedBy(fiveMinutes)
+            .aggregate(
+                    AvgMax::new,
+                    (key, value, aggregate) -> aggregate.add(value.getBody().usagePercent()),
+                    Materialized.with(Serdes.String(), new AvgMaxSerde())
+            );
 
-//        KTable<Windowed<String>, AvgMax> avgMaxOneMin = cpuStream
-//            .groupByKey()
-//            .windowedBy(oneMinute)
-//            .aggregate(
-//                    AvgMax::new,
-//                    (key, value, aggregate) -> aggregate.add(value.getBody().usagePercent()),
-//                    Materialized.with(Serdes.String(), new AvgMaxSerde())
-//            );
-//
-//        avgMaxOneMin.toStream().foreach((windowedKey, value) -> {
-//            log.info("[1분] CPU 평균 = {}, 최대 = {}", value.avg(), value.max());
-//        });
+        avgMaxOneMin.toStream().foreach((windowedKey, value) -> {
+            log.info("[5분] CPU 평균 = {}, 최대 = {}", value.avg(), value.max());
+        });
 
         return null;
     }
