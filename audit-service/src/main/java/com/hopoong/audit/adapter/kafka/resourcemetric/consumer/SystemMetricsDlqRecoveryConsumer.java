@@ -9,6 +9,7 @@ import com.hopoong.audit.usecase.resourcemonitor.ResourceMonitorService;
 import com.hopoong.core.message.common.KafkaCommonMessage;
 import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
 import com.hopoong.core.topic.KafkaTopicManager;
+import com.hopoong.core.util.LoggerUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -43,12 +44,12 @@ public class SystemMetricsDlqRecoveryConsumer {
 
         // 정상 메시지만 딜레이 후 전송
         branches[0]
-            .peek((key, value) -> log.info(":::::::::::::::::::::: {} Consume", KafkaTopicManager.SYSTEM_RESOURCE_METRICS_DLQ_TOPIC))
-            .transform(() -> new DelayedForwarderTransformer(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC, Duration.ofSeconds(5), kafkaTemplate));
+                .peek((key, value) -> LoggerUtil.section(log, "[DLQ 소비] Topic = %s".formatted(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_DLQ_TOPIC)))
+                .transform(() -> new DelayedForwarderTransformer(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC, Duration.ofSeconds(5), kafkaTemplate));
 
         // 중복된 메시지는 ERROR 토픽으로 전송
         branches[1]
-            .peek((key, value) -> log.info("중복 메시지 감지 → DB 보관 대상: {}", key))
+            .peek((key, value) -> LoggerUtil.section(log, "[중복 감지] DB 저장 대상 키 = %s".formatted(key)))
             .transform(() -> new ErrorForwarderTransformer(kafkaTemplate, objectMapper, KafkaTopicManager.SYSTEM_RESOURCE_METRICS_ERROR_TOPIC));
 
         return dlqStream;
