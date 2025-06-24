@@ -8,6 +8,7 @@ import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsErrorMessag
 import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
 import com.hopoong.core.topic.KafkaStoreManager;
 import com.hopoong.core.topic.KafkaTopicManager;
+import com.hopoong.core.util.LoggerUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
@@ -58,9 +59,7 @@ public class SystemMetricsErrorConsumer {
         errorTypeCountTable
             .toStream()
             .foreach((key, value) -> {
-                log.info("==================================================");
-                log.info("[ErrorTypeCount] key = {}, count = {}", key, value);
-                log.info("==================================================");
+                LoggerUtil.section(log, "[ErrorTypeCount] key = %s, count = %s".formatted(key, value));
             });
 
         return null;

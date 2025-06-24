@@ -1,7 +1,10 @@
 package com.hopoong.audit.adapter.kafka.resourcemetric.model;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 
+
+@Data
 public class AvgMax {
     private double sum;
     private double max;

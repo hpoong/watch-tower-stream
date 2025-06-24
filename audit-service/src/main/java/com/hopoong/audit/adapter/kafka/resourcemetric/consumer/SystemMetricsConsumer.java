@@ -9,16 +9,15 @@ import com.hopoong.audit.common.serde.AvgMaxSerde;
 import com.hopoong.audit.common.serde.GenericJsonSerde;
 import com.hopoong.audit.usecase.resourcemonitor.ResourceMonitorService;
 import com.hopoong.core.message.common.KafkaCommonMessage;
-import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsErrorMessage;
 import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
 import com.hopoong.core.message.resourcemonitor.SystemThresholdMessage;
 import com.hopoong.core.topic.KafkaTopicManager;
+import com.hopoong.core.util.LoggerUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -135,8 +134,6 @@ public class SystemMetricsConsumer {
             }
         });
 
-        parsedThresholdKTable.toStream().foreach((k, v) -> log.info(">>>>>>>>>>>> 2  key = {} value = {}", k, v));
-
         // JOIN 수행
         KStream<String, Double> alertStream = resourceMetricsStream.join(
             parsedThresholdKTable,
@@ -151,9 +148,7 @@ public class SystemMetricsConsumer {
 
         alertStream
             .foreach((key, value) -> {
-                log.info("==================================================");
-                log.info("[alertStream] key = {}, value = {}", key, value);
-                log.info("==================================================");
+                LoggerUtil.section(log, "[alertStream] key = %s, value = %s".formatted(key, value));
             });
 
         return null;
@@ -188,11 +183,11 @@ public class SystemMetricsConsumer {
             .aggregate(
                     AvgMax::new,
                     (key, value, aggregate) -> aggregate.add(value.getBody().usagePercent()),
-                    Materialized.with(Serdes.String(), new AvgMaxSerde())
+                    Materialized.with(Serdes.String(), new AvgMaxSerde(objectMapper))
             );
 
         avgMaxOneMin.toStream().foreach((windowedKey, value) -> {
-            log.info("[5분] CPU 평균 = {}, 최대 = {}", value.avg(), value.max());
+            LoggerUtil.section(log, "[5분] CPU 평균 = %.2f, 최대 = %.2f".formatted(value.avg(), value.max()));
         });
 
         return null;

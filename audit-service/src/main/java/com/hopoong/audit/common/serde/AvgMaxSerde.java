@@ -2,15 +2,23 @@ package com.hopoong.audit.common.serde;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hopoong.audit.adapter.kafka.resourcemetric.model.AvgMax;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serializer;
 
 import java.nio.charset.StandardCharsets;
 
+@Data
 public class AvgMaxSerde implements Serde<AvgMax> {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+
+    public AvgMaxSerde(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public Serializer<AvgMax> serializer() {
