@@ -1,4 +1,4 @@
-package com.hopoong.audit.adapter.kafka.resourcemetric.consumer;
+package com.hopoong.audit.adapter.kafka.resourcemetric.dlq;
 
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -27,9 +27,7 @@ public class SystemMetricsDlqRecoveryConsumer {
 
 
     private final ObjectMapper objectMapper;
-
     private final ResourceMonitorService resourceMonitorService;
-
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Bean
@@ -44,8 +42,8 @@ public class SystemMetricsDlqRecoveryConsumer {
 
         // 정상 메시지만 딜레이 후 전송
         branches[0]
-                .peek((key, value) -> LoggerUtil.section(log, "[DLQ 소비] Topic = %s".formatted(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_DLQ_TOPIC)))
-                .transform(() -> new DelayedForwarderTransformer(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC, Duration.ofSeconds(5), kafkaTemplate));
+            .peek((key, value) -> LoggerUtil.section(log, "[DLQ 소비] Topic = %s".formatted(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_DLQ_TOPIC)))
+            .transform(() -> new DelayedForwarderTransformer(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC, Duration.ofSeconds(5), kafkaTemplate));
 
         // 중복된 메시지는 ERROR 토픽으로 전송
         branches[1]

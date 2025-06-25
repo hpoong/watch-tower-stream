@@ -1,4 +1,4 @@
-package com.hopoong.audit.adapter.kafka.resourcemetric.consumer;
+package com.hopoong.audit.adapter.kafka.resourcemetric.error;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,4 +1,4 @@
-package com.hopoong.audit.adapter.kafka.resourcemetric.consumer;
+package com.hopoong.audit.adapter.kafka.resourcemetric.recovery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hopoong.audit.adapter.kafka.resourcemetric.transformer.BatchedDbWriterTransformer;
@@ -25,8 +25,8 @@ public class SystemMetricsReProcesConsumer {
     public KStream<String, String> reprocessStream(StreamsBuilder builder) {
         KStream<String, String> stream = builder.stream(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC);
         stream
-                .peek((key, value) -> LoggerUtil.section(log, "[재처리] Topic Consume: %s".formatted(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC)))
-                .transform(() -> new BatchedDbWriterTransformer(10000, objectMapper, resourceMonitorService));
+            .peek((key, value) -> LoggerUtil.section(log, "[재처리] Topic Consume: %s".formatted(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC)))
+            .transform(() -> new BatchedDbWriterTransformer(10000, objectMapper, resourceMonitorService));
 
         return stream;
     }
