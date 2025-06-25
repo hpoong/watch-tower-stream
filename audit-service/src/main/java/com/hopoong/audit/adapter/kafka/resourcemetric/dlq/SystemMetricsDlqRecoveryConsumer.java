@@ -30,8 +30,12 @@ public class SystemMetricsDlqRecoveryConsumer {
     private final ResourceMonitorService resourceMonitorService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
+
+    /*
+     * system-resource-metrics DLQ 처리
+     */
     @Bean
-    public KStream<String, String> dlqDelayStream(StreamsBuilder builder) {
+    public KStream<String, String> systemMetricsDlqDelayStream(StreamsBuilder builder) {
 
         KStream<String, String> dlqStream = builder.stream(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_DLQ_TOPIC);
 
@@ -40,14 +44,14 @@ public class SystemMetricsDlqRecoveryConsumer {
                 (key, value) -> true
         );
 
-        // 정상 메시지만 딜레이 후 전송
+        // 정상 메시지인 경우 지연 후 REPROCESS 토픽으로 전송
         branches[0]
-            .peek((key, value) -> LoggerUtil.section(log, "[DLQ 소비] Topic = %s".formatted(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_DLQ_TOPIC)))
+            .peek((key, value) -> LoggerUtil.section(log, "[DLQ] REPROCESS 토픽으로 전송 처리"))
             .transform(() -> new DelayedForwarderTransformer(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC, Duration.ofSeconds(5), kafkaTemplate));
 
-        // 중복된 메시지는 ERROR 토픽으로 전송
+        // 중복된 메시지인 경우 ERROR 토픽으로 전송
         branches[1]
-            .peek((key, value) -> LoggerUtil.section(log, "[중복 감지] DB 저장 대상 키 = %s".formatted(key)))
+            .peek((key, value) -> LoggerUtil.section(log, "[DLQ] ERROR 토픽으로 전송"))
             .transform(() -> new ErrorForwarderTransformer(kafkaTemplate, objectMapper, KafkaTopicManager.SYSTEM_RESOURCE_METRICS_ERROR_TOPIC));
 
         return dlqStream;

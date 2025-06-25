@@ -26,8 +26,10 @@ public class SystemMetricsAggregationStream {
 
     private final ObjectMapper objectMapper;
 
-    @Bean
-    public KStream<String, String> systemMetricsThresholdAvgMaxOneMinStream(StreamsBuilder builder) {
+    /*
+     * 리소스 사용량 5분 평균 값 및 min, max 값 조회
+     */
+    public KStream<String, String> buildAvgMaxStream(StreamsBuilder builder, String type) {
 
         // system-resource-metrics : KStream
         GenericJsonSerde<KafkaCommonMessage<SystemResourceMetricsMessage>> resourceSerde =
@@ -39,23 +41,24 @@ public class SystemMetricsAggregationStream {
         );
 
         KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> cpuStream =
-                resourceMetricsStream.filter((key, value) ->
-                        value.getBody().resourceName().equalsIgnoreCase("CPU")
-                );
+            resourceMetricsStream.filter((key, value) ->
+                    value.getBody().resourceName().equalsIgnoreCase("CPU")
+            );
 
 
         TimeWindows oneMinute = TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1));
         TimeWindows fiveMinutes = TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(5));
         TimeWindows tenMinutes = TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(10));
 
+        // 5분 평균
         KTable<Windowed<String>, AvgMax> avgMaxOneMin = cpuStream
-                .groupByKey()
-                .windowedBy(fiveMinutes)
-                .aggregate(
-                        AvgMax::new,
-                        (key, value, aggregate) -> aggregate.add(value.getBody().usagePercent()),
-                        Materialized.with(Serdes.String(), new AvgMaxSerde(objectMapper))
-                );
+            .groupByKey()
+            .windowedBy(fiveMinutes)
+            .aggregate(
+                    AvgMax::new,
+                    (key, value, aggregate) -> aggregate.add(value.getBody().usagePercent()),
+                    Materialized.with(Serdes.String(), new AvgMaxSerde(objectMapper))
+            );
 
         avgMaxOneMin.toStream().foreach((windowedKey, value) -> {
             LoggerUtil.section(log, "[5분] CPU 평균 = %.2f, 최대 = %.2f".formatted(value.avg(), value.max()));

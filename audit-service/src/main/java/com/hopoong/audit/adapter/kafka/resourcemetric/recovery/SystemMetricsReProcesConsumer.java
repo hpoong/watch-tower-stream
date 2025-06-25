@@ -21,11 +21,14 @@ public class SystemMetricsReProcesConsumer {
     private final ObjectMapper objectMapper;
     private final ResourceMonitorService resourceMonitorService;
 
+    /*
+     * system-resource-metrics 재처리
+     */
     @Bean
     public KStream<String, String> reprocessStream(StreamsBuilder builder) {
         KStream<String, String> stream = builder.stream(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC);
         stream
-            .peek((key, value) -> LoggerUtil.section(log, "[재처리] Topic Consume: %s".formatted(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC)))
+            .peek((key, value) -> LoggerUtil.section(log, "[REPROCESS] Topic Consume: %s".formatted(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC)))
             .transform(() -> new BatchedDbWriterTransformer(10000, objectMapper, resourceMonitorService));
 
         return stream;

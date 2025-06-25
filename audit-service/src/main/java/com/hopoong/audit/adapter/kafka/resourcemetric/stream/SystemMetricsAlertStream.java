@@ -26,6 +26,9 @@ public class SystemMetricsAlertStream {
 
     private final ObjectMapper objectMapper;
 
+    /*
+     * 리소스 사용량 임계치 초과시 알람처리
+     */
     @Bean
     public KStream<String, String> systemMetricsThresholdAlertStream(StreamsBuilder builder) {
 
@@ -67,9 +70,9 @@ public class SystemMetricsAlertStream {
 
 
         alertStream
-                .foreach((key, value) -> {
-                    LoggerUtil.section(log, "[alertStream] key = %s, value = %s".formatted(key, value));
-                });
+            .foreach((key, value) -> {
+                LoggerUtil.section(log, "[alertStream] key = %s, value = %s".formatted(key, value));
+            });
 
         return null;
     }

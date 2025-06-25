@@ -27,13 +27,17 @@ import org.springframework.context.annotation.Configuration;
 @RequiredArgsConstructor
 public class SystemMetricsErrorConsumer {
 
+
+    /*
+     * system-resource-metrics ERROR 집계 처리
+     */
     @Bean
     public KTable<String, KafkaCommonMessage<SystemResourceMetricsMessage>> systemMetricsErrorStream(
             StreamsBuilder builder,
             ObjectMapper objectMapper
     ) {
 
-        // KTable
+        // KTable - ERROR
         GenericJsonSerde<KafkaCommonMessage<SystemResourceMetricsErrorMessage>> messageSerde =
                 new GenericJsonSerde<>(objectMapper, new TypeReference<KafkaCommonMessage<SystemResourceMetricsErrorMessage>>() {});
 
@@ -42,7 +46,7 @@ public class SystemMetricsErrorConsumer {
                 Consumed.with(Serdes.String(), messageSerde)
         );
 
-        // 에러 유형별 카운트 테이블 유지
+        // 에러 유형별 카운트 테이블 생성
         KTable<String, Long> errorTypeCountTable = errorKTable.toStream()
             .map(
                 (key, value) -> {
@@ -59,7 +63,7 @@ public class SystemMetricsErrorConsumer {
         errorTypeCountTable
             .toStream()
             .foreach((key, value) -> {
-                LoggerUtil.section(log, "[ErrorTypeCount] key = %s, count = %s".formatted(key, value));
+                LoggerUtil.section(log, "[Error 집계] key = %s, count = %s".formatted(key, value));
             });
 
         return null;

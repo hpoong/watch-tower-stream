@@ -29,6 +29,9 @@ public class SystemMetricsPersistConsumer {
     private final ResourceMonitorService resourceMonitorService;
 
 
+    /*
+     * system-resource-metrics 처리
+     */
     @KafkaListener(
             topics = KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC,
             groupId = "system-resource-metrics-group",
@@ -44,25 +47,16 @@ public class SystemMetricsPersistConsumer {
             KafkaCommonMessage.Header header = message.getHeader();
             String server = body.serverName();
 
-            // 출력용
+            // 테스트용 HashMap
             serverMessageMap
-                    .computeIfAbsent(server, k -> Collections.synchronizedList(new ArrayList<>()))
-                    .add(body);
+                .computeIfAbsent(server, k -> Collections.synchronizedList(new ArrayList<>()))
+                .add(body);
 
             if (serverMessageMap.get(server).size() == 3) {
                 List<SystemResourceMetricsMessage> sortedList = serverMessageMap.get(server).stream()
-                        .sorted(Comparator.comparing(SystemResourceMetricsMessage::resourceName))
-                        .toList();
+                    .sorted(Comparator.comparing(SystemResourceMetricsMessage::resourceName))
+                    .toList();
 
-                log.debug("[SEQ-CHECK] {}:", server);
-                for (SystemResourceMetricsMessage m : sortedList) {
-                    log.debug("  → [{}] {}% ({}) @ {}",
-                            m.resourceName(),
-                            String.format("%.3f", m.usagePercent()),
-                            m.alertLevel(),
-                            header.getTimestamp()
-                    );
-                }
                 serverMessageMap.get(server).clear();
 
                 // 강제 에러 처리
@@ -75,31 +69,8 @@ public class SystemMetricsPersistConsumer {
             ack.acknowledge();
 
         } catch (Exception e) {
-            KafkaCommonMessage.Header header = extractHeaderSafely(record);
             log.error("[CONSUMER ERROR] Failed to process orgMessage", e);
-            log.debug("  ↳ partition={}, offset={}, traceId={}, topic={}",
-                    record.partition(),
-                    record.offset(),
-                    Optional.ofNullable(header)
-                            .map(KafkaCommonMessage.Header::getTraceId)
-                            .orElse("UNKNOWN"),
-                    Optional.ofNullable(header)
-                            .map(KafkaCommonMessage.Header::getTopic)
-                            .orElse("UNKNOWN")
-            );
-
             throw e;
-        }
-    }
-
-
-    private KafkaCommonMessage.Header extractHeaderSafely(ConsumerRecord<String, String> record) {
-        try {
-            KafkaCommonMessage<SystemResourceMetricsMessage> message =
-                    objectMapper.readValue(record.value(), new TypeReference<>() {});
-            return message.getHeader();
-        } catch (JsonProcessingException e) {
-            return null;
         }
     }
 }
