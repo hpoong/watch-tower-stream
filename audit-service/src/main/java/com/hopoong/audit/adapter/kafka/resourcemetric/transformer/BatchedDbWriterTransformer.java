@@ -92,7 +92,7 @@ public class BatchedDbWriterTransformer implements Transformer<String, String, K
         synchronized (buffer) {
             if (!buffer.isEmpty()) {
                 try {
-                    resourceMonitorService.insertSystemResourceMetricsBulk(new ArrayList<>(buffer));
+                    resourceMonitorService.saveSystemResourceMetricsBulk(new ArrayList<>(buffer));
                     buffer.clear();
                 } catch (IOException e) {
                     log.error("[BatchedDbWriterTransformer FlushBuffer] 네트워크 또는 시스템 오류 {}", e.getMessage());

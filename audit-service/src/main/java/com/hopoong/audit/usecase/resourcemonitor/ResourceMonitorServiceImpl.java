@@ -9,6 +9,8 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import com.hopoong.audit.adapter.kafka.resourcemetric.model.AvgMax;
+import com.hopoong.audit.persistence.document.StatisticalMetricDocument;
 import com.hopoong.audit.persistence.document.SystemMetricDocument;
 import com.hopoong.core.message.common.KafkaCommonMessage;
 import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsErrorMessage;
@@ -34,7 +36,7 @@ public class ResourceMonitorServiceImpl implements ResourceMonitorService {
     private final ObjectMapper objectMapper;
 
     @Override
-    public void insertSystemResourceMetrics(KafkaCommonMessage<SystemResourceMetricsMessage> message) throws IOException {
+    public void saveSystemResourceMetrics(KafkaCommonMessage<SystemResourceMetricsMessage> message) throws IOException {
 
         SystemMetricDocument metric = SystemMetricDocument.builder()
                 .resourceName(message.getBody().resourceName())
@@ -50,7 +52,6 @@ public class ResourceMonitorServiceImpl implements ResourceMonitorService {
                 .index("system_metrics")
                 .document(metric)
         ));
-
     }
 
     @Override
@@ -65,7 +66,7 @@ public class ResourceMonitorServiceImpl implements ResourceMonitorService {
     }
 
     @Override
-    public void insertSystemResourceMetricsBulk(List<KafkaCommonMessage<SystemResourceMetricsMessage>> messages) throws IOException {
+    public void saveSystemResourceMetricsBulk(List<KafkaCommonMessage<SystemResourceMetricsMessage>> messages) throws IOException {
         List<List<KafkaCommonMessage<SystemResourceMetricsMessage>>> partitions = Lists.partition(messages, 1000);
 
         for (List<KafkaCommonMessage<SystemResourceMetricsMessage>> batch : partitions) {
@@ -122,6 +123,25 @@ public class ResourceMonitorServiceImpl implements ResourceMonitorService {
         }
     }
 
+    @Override
+    public void saveSystemResourceMetrics5Min(AvgMax value) throws IOException {
+        StatisticalMetricDocument metric = StatisticalMetricDocument.builder()
+                .averageValue(value.getAverageValue())
+                .minTimestamp(value.getMinTimestamp())
+                .minValue(value.getMinValue())
+                .maxTimestamp(value.getMaxTimestamp())
+                .maxValue(value.getMaxValue())
+                .totalValue(value.getTotalValue())
+                .timestamp(value.getTimestamp())
+                .resourceName(value.getResourceName())
+                .serverName(value.getServerName())
+                .build();
+
+        elasticsearchClient.index(IndexRequest.of(i -> i
+                .index("system_metrics_5min")
+                .document(metric)
+        ));
+    }
 
 
 }

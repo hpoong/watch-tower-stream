@@ -1,6 +1,5 @@
 package com.hopoong.audit.adapter.kafka.resourcemetric.consumer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hopoong.audit.common.exception.KafkaProcessingException;
@@ -60,11 +59,11 @@ public class SystemMetricsPersistConsumer {
                 serverMessageMap.get(server).clear();
 
                 // 강제 에러 처리
-                resourceMonitorService.insertSystemResourceMetrics(message);
+                resourceMonitorService.saveSystemResourceMetrics(message);
                 throw new KafkaProcessingException(record.topic(), record.partition(), record.offset(), header.getTraceId());
             }
 
-            resourceMonitorService.insertSystemResourceMetrics(message);
+            resourceMonitorService.saveSystemResourceMetrics(message);
 
             ack.acknowledge();
 
