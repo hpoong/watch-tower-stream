@@ -1,0 +1,40 @@
+# 리소스 5분 사용량
+
+
+PUT statistical_metric_5min
+{
+  "mappings": {
+    "properties": {
+      "timestamp": {
+        "type": "date"
+      },
+      "averageValue": {
+        "type": "double"
+      },
+      "totalValue": {
+        "type": "double"
+      },
+      "minTimestamp": {
+        "type": "date"
+      },
+      "minValue": {
+        "type": "double"
+      },
+      "maxTimestamp": {
+        "type": "date"
+      },
+      "maxValue": {
+        "type": "double"
+      },
+      "resourceName": {
+        "type": "keyword"
+      },
+      "serverName": {
+        "type": "keyword"
+      }
+    }
+  }
+}
+
+
+GET /system_metrics_5min/_mapping
