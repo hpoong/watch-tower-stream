@@ -15,7 +15,7 @@ public class SystemThresholdServiceImpl implements SystemThresholdService {
     private final SystemThresholdKafkaPublisher kafkaPublisher;
 
     @Override
-    public void registerThreshold(ThresholdRequest request) {
+    public void saveThreshold(ThresholdRequest request) {
         SystemThresholdMessage message = SystemThresholdMessage.builder()
                 .thresholdValue(request.getThreshold())
                 .serverName(request.getServerName())

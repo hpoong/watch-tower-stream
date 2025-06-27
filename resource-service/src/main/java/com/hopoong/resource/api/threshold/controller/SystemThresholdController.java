@@ -1,4 +1,4 @@
-package com.hopoong.resource.api.threshold;
+package com.hopoong.resource.api.threshold.controller;
 
 import com.hopoong.core.response.CommonResponseCodeEnum;
 import com.hopoong.core.response.SuccessResponse;
@@ -15,11 +15,10 @@ public class SystemThresholdController {
 
     private final SystemThresholdService systemThresholdService;
 
-    @PostMapping("/register")
-    public SuccessResponse registerThreshold(@RequestBody ThresholdRequest request) {
-        systemThresholdService.registerThreshold(request);
+    @PostMapping("/save")
+    public SuccessResponse saveThreshold(@RequestBody ThresholdRequest request) {
+        systemThresholdService.saveThreshold(request);
         return new SuccessResponse(CommonResponseCodeEnum.SERVER, null);
     }
-
 }
 
