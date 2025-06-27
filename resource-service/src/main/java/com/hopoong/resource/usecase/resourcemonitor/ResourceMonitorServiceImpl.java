@@ -1,5 +1,6 @@
 package com.hopoong.resource.usecase.resourcemonitor;
 
+import com.hopoong.resource.api.resourcemonitor.model.ResourceMonitorRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,11 @@ public class ResourceMonitorServiceImpl implements ResourceMonitorService {
         return usage >= STAGE3_THRESHOLD ? "critical" :
             usage >= STAGE2_THRESHOLD ? "warning" :
             usage >= STAGE1_THRESHOLD ? "info" : "normal";
+    }
+
+    @Override
+    public void replayServerMetrics(ResourceMonitorRequest request) {
+        
     }
 
 
