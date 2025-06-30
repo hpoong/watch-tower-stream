@@ -2,6 +2,8 @@ package com.hopoong.core.util;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class RandomUtil {
@@ -25,7 +27,9 @@ public class RandomUtil {
 
     // Time
     public static LocalDateTime getCurrentTime() {
-        return LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        ZonedDateTime seoulTime = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
+        ZonedDateTime utcTime = seoulTime.withZoneSameInstant(ZoneOffset.UTC);
+        return utcTime.toLocalDateTime();
     }
 
 }
