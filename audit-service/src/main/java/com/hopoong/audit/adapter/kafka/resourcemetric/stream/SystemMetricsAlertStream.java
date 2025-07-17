@@ -21,10 +21,11 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
-public class SystemMetricsAlertStream {
+public class SystemMetricsAlertStream  extends AbstractMetricsStream {
 
-    private final ObjectMapper objectMapper;
+    public SystemMetricsAlertStream(ObjectMapper objectMapper) {
+        super(objectMapper);
+    }
 
     /*
      * 리소스 사용량 임계치 초과시 알람처리
@@ -32,33 +33,18 @@ public class SystemMetricsAlertStream {
     @Bean
     public KStream<String, String> systemMetricsThresholdAlertStream(StreamsBuilder builder) {
 
-        // system-resource-metrics : KStream
-        GenericJsonSerde<KafkaCommonMessage<SystemResourceMetricsMessage>> resourceSerde =
-                new GenericJsonSerde<>(objectMapper, new TypeReference<KafkaCommonMessage<SystemResourceMetricsMessage>>() {});
+        GenericJsonSerde<KafkaCommonMessage<SystemResourceMetricsMessage>> serde
+                = createSerde(new TypeReference<KafkaCommonMessage<SystemResourceMetricsMessage>>() {});
 
-        KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> resourceMetricsStream = builder.stream(
-                KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC,
-                Consumed.with(Serdes.String(), resourceSerde)
-        );
+        KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> stream
+                = createResourceMetricsStream(builder, KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC, serde);
 
-        // system-threshold : KTable
-        KTable<String, String> thresholdKTable = builder.table(
-                KafkaTopicManager.SYSTEM_THRESHOLD_TOPIC,
-                Consumed.with(Serdes.String(), Serdes.String())
-        );
-
-        KTable<String, KafkaCommonMessage<SystemThresholdMessage>> parsedThresholdKTable = thresholdKTable.mapValues(value -> {
-            try {
-                String jsonString = objectMapper.readValue(value, String.class);
-                return objectMapper.readValue(jsonString, new TypeReference<KafkaCommonMessage<SystemThresholdMessage>>() {});
-            } catch (Exception e) {
-                log.error("Failed to deserialize threshold message: {}", value, e);
-                return null;
-            }
-        });
+        KTable<String, KafkaCommonMessage<SystemThresholdMessage>> parsedThresholdKTable
+                = parseKTable(builder, KafkaTopicManager.SYSTEM_THRESHOLD_TOPIC,
+                    new TypeReference<KafkaCommonMessage<SystemThresholdMessage>>() {});
 
         // JOIN 수행
-        KStream<String, Double> alertStream = resourceMetricsStream.join(
+        KStream<String, Double> alertStream = stream.join(
                 parsedThresholdKTable,
                 (resource, threshold) -> {
                     if(resource.getBody().usagePercent() > threshold.getBody().thresholdValue()) {
@@ -68,7 +54,6 @@ public class SystemMetricsAlertStream {
                 }
         ).filter((key, value) -> value != null);
 
-
         alertStream
             .foreach((key, value) -> {
                 LoggerUtil.section(log, "[alertStream] key = %s, value = %s".formatted(key, value));
@@ -76,5 +61,4 @@ public class SystemMetricsAlertStream {
 
         return null;
     }
-
 }

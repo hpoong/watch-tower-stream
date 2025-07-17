@@ -23,16 +23,21 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
-public class SystemMetricsAggregationStream {
 
-    private final ObjectMapper objectMapper;
+public class SystemMetricsAggregationStream extends AbstractMetricsStream {
+
     private final ResourceMonitorService resourceMonitorService;
+
+    public SystemMetricsAggregationStream(ObjectMapper objectMapper, ResourceMonitorService resourceMonitorService) {
+        super(objectMapper);
+        this.resourceMonitorService = resourceMonitorService;
+    }
 
     @Bean
     public List<KStream<String, String>> avgMax5MinStreams(StreamsBuilder builder) {
@@ -53,21 +58,16 @@ public class SystemMetricsAggregationStream {
      */
     public KStream<String, String> buildAvgMaxStream(StreamsBuilder builder, String type, TimeWindows timeWindows,  ThrowingConsumer<AvgMax> persistFunction) {
 
-        // system-resource-metrics : KStream
-        GenericJsonSerde<KafkaCommonMessage<SystemResourceMetricsMessage>> resourceSerde =
-                new GenericJsonSerde<>(objectMapper, new TypeReference<KafkaCommonMessage<SystemResourceMetricsMessage>>() {});
+        GenericJsonSerde<KafkaCommonMessage<SystemResourceMetricsMessage>> serde
+                    = createSerde(new TypeReference<KafkaCommonMessage<SystemResourceMetricsMessage>>() {});
 
-        KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> resourceMetricsStream = builder.stream(
-                KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC,
-                Consumed.with(Serdes.String(), resourceSerde)
-        );
+        KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> stream
+                = createResourceMetricsStream(builder, KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC, serde);
 
-        KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> filteredStream =
-            resourceMetricsStream.filter((key, value) ->
-                value.getBody().resourceName().equalsIgnoreCase(type)
-            );
+        KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> filteredStream
+                = filterByResourceType(stream, type);
 
-        // N분 평균
+        // N분 평균 집계
         KTable<Windowed<String>, AvgMax> avgMaxOneMin = filteredStream
             .groupByKey()
             .windowedBy(timeWindows)
@@ -79,8 +79,16 @@ public class SystemMetricsAggregationStream {
             .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()));
 
 
+        // N분 데이터 저장.
         avgMaxOneMin.toStream().foreach((windowedKey, value) -> {
+            long startEpoch = windowedKey.window().start();
             long endEpoch = windowedKey.window().end();
+
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+            LocalDateTime startDateTime = Instant.ofEpochMilli(startEpoch)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDateTime();
 
             LocalDateTime endDateTime = Instant.ofEpochMilli(endEpoch)
                     .atZone(ZoneId.systemDefault())
@@ -92,6 +100,19 @@ public class SystemMetricsAggregationStream {
             value.setResourceName(keyParts[1]);
 
             persistFunction.accept(value);
+
+            LoggerUtil.section(log, """
+                [%s] 
+                5분 평균 = %.2f
+                최대 = %.2f
+                윈도우 시작: %s
+                윈도우 종료: %s
+                """.formatted(
+                    windowedKey.key(),
+                    value.avg(), value.max(),
+                    startDateTime.format(formatter),
+                    endDateTime.format(formatter)
+            ));
         });
 
         return null;
