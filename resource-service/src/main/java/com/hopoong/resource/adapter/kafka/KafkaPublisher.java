@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class KafkaPublisher<T> implements Consumer<T> {
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
     @Override
