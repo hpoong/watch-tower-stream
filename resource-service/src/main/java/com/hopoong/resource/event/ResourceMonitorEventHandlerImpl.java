@@ -1,7 +1,7 @@
 package com.hopoong.resource.event;
 
 import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
-import com.hopoong.resource.adapter.kafka.SystemMetricsKafkaPublisher;
+import com.hopoong.resource.adapter.kafka.KafkaPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ResourceMonitorEventHandlerImpl implements ResourceMonitorEventHandler {
 
-    private final SystemMetricsKafkaPublisher kafkaPublisher;
+    private final KafkaPublisher<SystemResourceMetricsMessage> kafkaPublisher;
 
     // 시스템 리소스
     @Override
