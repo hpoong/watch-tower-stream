@@ -29,7 +29,7 @@ public class SystemMetricsReProcesConsumer {
         KStream<String, String> stream = builder.stream(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC);
         stream
             .peek((key, value) -> LoggerUtil.section(log, "[REPROCESS] 완료"))
-            .transform(() -> new BatchedDbWriterTransformer(10000, objectMapper, resourceMonitorService));
+            .transform(() -> new BatchedDbWriterTransformer(objectMapper, resourceMonitorService));
 
         return stream;
     }
