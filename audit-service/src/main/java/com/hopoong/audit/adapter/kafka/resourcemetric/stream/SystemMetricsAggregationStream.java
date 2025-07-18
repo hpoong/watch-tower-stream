@@ -10,7 +10,6 @@ import com.hopoong.core.message.common.KafkaCommonMessage;
 import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
 import com.hopoong.core.topic.KafkaTopicManager;
 import com.hopoong.core.util.LoggerUtil;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -40,7 +39,7 @@ public class SystemMetricsAggregationStream extends AbstractMetricsStream {
     }
 
     @Bean
-    public List<KStream<String, String>> avgMax5MinStreams(StreamsBuilder builder) {
+    public List<KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>>> avgMax5MinStreams(StreamsBuilder builder) {
         List<String> resourceTypes = List.of("CPU", "DISK", "Memory");
 
         return resourceTypes.stream()
@@ -56,52 +55,71 @@ public class SystemMetricsAggregationStream extends AbstractMetricsStream {
     /*
      * 리소스 사용량 N분 평균 값 및 min, max 값 조회
      */
-    public KStream<String, String> buildAvgMaxStream(StreamsBuilder builder, String type, TimeWindows timeWindows,  ThrowingConsumer<AvgMax> persistFunction) {
+    private KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> buildAvgMaxStream(StreamsBuilder builder, String type, TimeWindows timeWindows, ThrowingConsumer<AvgMax> persistFunction) {
 
+        // 스트림 생성
+        KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> filteredStream = createAndFilterStream(builder, type);
+
+        // N분 평균 집계
+        KTable<Windowed<String>, AvgMax> avgMaxOneMin = aggregateStream(filteredStream, timeWindows);
+
+        // N분 데이터 저장.
+        avgMaxOneMin.toStream().foreach((windowedKey, value) -> {
+            persistAndLog(windowedKey, value, persistFunction);
+        });
+
+        return filteredStream;
+    }
+
+
+
+    // 스트림 생성 및 필터
+    private KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> createAndFilterStream(StreamsBuilder builder, String type) {
         GenericJsonSerde<KafkaCommonMessage<SystemResourceMetricsMessage>> serde
-                    = createSerde(new TypeReference<KafkaCommonMessage<SystemResourceMetricsMessage>>() {});
+                = createSerde(new TypeReference<KafkaCommonMessage<SystemResourceMetricsMessage>>() {});
 
         KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> stream
                 = createResourceMetricsStream(builder, KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC, serde);
 
-        KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> filteredStream
-                = filterByResourceType(stream, type);
+        return filterByResourceType(stream, type);
+    }
 
-        // N분 평균 집계
-        KTable<Windowed<String>, AvgMax> avgMaxOneMin = filteredStream
-            .groupByKey()
-            .windowedBy(timeWindows)
-            .aggregate(
-                    AvgMax::new,
-                    (key, value, aggregate) -> aggregate.add(value.getBody().usagePercent(), LocalDateTime.now()),
-                    Materialized.with(Serdes.String(), new AvgMaxSerde(objectMapper))
-            )
-            .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()));
+    // 집계
+    private KTable<Windowed<String>, AvgMax> aggregateStream(KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> stream, TimeWindows timeWindows) {
+        return stream
+                .groupByKey()
+                .windowedBy(timeWindows)
+                .aggregate(
+                        AvgMax::new,
+                        (key, value, aggregate) -> aggregate.add(value.getBody().usagePercent(), LocalDateTime.now()),
+                        Materialized.with(Serdes.String(), new AvgMaxSerde(objectMapper))
+                )
+                .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()));
+    }
 
+    // 저장 및 로깅
+    private void persistAndLog(Windowed<String> windowedKey, AvgMax value, ThrowingConsumer<AvgMax> persistFunction) {
+        long startEpoch = windowedKey.window().start();
+        long endEpoch = windowedKey.window().end();
 
-        // N분 데이터 저장.
-        avgMaxOneMin.toStream().foreach((windowedKey, value) -> {
-            long startEpoch = windowedKey.window().start();
-            long endEpoch = windowedKey.window().end();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime startDateTime = Instant.ofEpochMilli(startEpoch)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
 
-            LocalDateTime startDateTime = Instant.ofEpochMilli(startEpoch)
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDateTime();
+        LocalDateTime endDateTime = Instant.ofEpochMilli(endEpoch)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
 
-            LocalDateTime endDateTime = Instant.ofEpochMilli(endEpoch)
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDateTime();
+        String[] keyParts = windowedKey.key().split(":");
+        value.setTimestamp(endDateTime);
+        value.setServerName(keyParts[0]);
+        value.setResourceName(keyParts[1]);
 
-            String[] keyParts = windowedKey.key().split(":");
-            value.setTimestamp(endDateTime);
-            value.setServerName(keyParts[0]);
-            value.setResourceName(keyParts[1]);
+        persistFunction.accept(value);
 
-            persistFunction.accept(value);
-
-            LoggerUtil.section(log, """
+        LoggerUtil.section(log, """
                 [리소스 사용량]
                 %s
                 5분 평균 = %.2f
@@ -109,14 +127,11 @@ public class SystemMetricsAggregationStream extends AbstractMetricsStream {
                 윈도우 시작: %s
                 윈도우 종료: %s
                 """.formatted(
-                    windowedKey.key(),
-                    value.avg(), value.max(),
-                    startDateTime.format(formatter),
-                    endDateTime.format(formatter)
-            ));
-        });
-
-        return null;
+                windowedKey.key(),
+                value.avg(), value.max(),
+                startDateTime.format(formatter),
+                endDateTime.format(formatter)
+        ));
     }
 
 
