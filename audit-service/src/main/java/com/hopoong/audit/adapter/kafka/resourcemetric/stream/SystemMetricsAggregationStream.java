@@ -102,7 +102,8 @@ public class SystemMetricsAggregationStream extends AbstractMetricsStream {
             persistFunction.accept(value);
 
             LoggerUtil.section(log, """
-                [%s] 
+                [리소스 사용량]
+                %s
                 5분 평균 = %.2f
                 최대 = %.2f
                 윈도우 시작: %s

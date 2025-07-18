@@ -28,7 +28,7 @@ public class SystemMetricsReProcesConsumer {
     public KStream<String, String> reprocessStream(StreamsBuilder builder) {
         KStream<String, String> stream = builder.stream(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC);
         stream
-            .peek((key, value) -> LoggerUtil.section(log, "[REPROCESS] Topic Consume: %s".formatted(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC)))
+            .peek((key, value) -> LoggerUtil.section(log, "[REPROCESS] 완료"))
             .transform(() -> new BatchedDbWriterTransformer(10000, objectMapper, resourceMonitorService));
 
         return stream;

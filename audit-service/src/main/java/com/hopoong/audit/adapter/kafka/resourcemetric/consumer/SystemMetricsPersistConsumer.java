@@ -40,7 +40,7 @@ public class SystemMetricsPersistConsumer {
     public void consumeSystemResourceMetrics(ConsumerRecord<String, String> record, Acknowledgment ack) throws IOException {
         try {
             KafkaCommonMessage<SystemResourceMetricsMessage> message =
-                    objectMapper.readValue(record.value(), new TypeReference<>() {});
+                    objectMapper.readValue(record.value(), new TypeReference<KafkaCommonMessage<SystemResourceMetricsMessage>>() {});
 
             SystemResourceMetricsMessage body = message.getBody();
             KafkaCommonMessage.Header header = message.getHeader();

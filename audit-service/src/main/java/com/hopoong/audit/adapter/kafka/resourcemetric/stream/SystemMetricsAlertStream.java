@@ -8,11 +8,8 @@ import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
 import com.hopoong.core.message.resourcemonitor.SystemThresholdMessage;
 import com.hopoong.core.topic.KafkaTopicManager;
 import com.hopoong.core.util.LoggerUtil;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.springframework.context.annotation.Bean;
@@ -21,7 +18,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class SystemMetricsAlertStream  extends AbstractMetricsStream {
+public class SystemMetricsAlertStream extends AbstractMetricsStream {
 
     public SystemMetricsAlertStream(ObjectMapper objectMapper) {
         super(objectMapper);
@@ -54,10 +51,13 @@ public class SystemMetricsAlertStream  extends AbstractMetricsStream {
                 }
         ).filter((key, value) -> value != null);
 
-        alertStream
-            .foreach((key, value) -> {
-                LoggerUtil.section(log, "[alertStream] key = %s, value = %s".formatted(key, value));
-            });
+        alertStream.foreach((key, value) -> {
+            LoggerUtil.section(log, """
+                [임계치 초과]
+                key = %s
+                value = %s
+                """.formatted(key, value));
+        });
 
         return null;
     }
