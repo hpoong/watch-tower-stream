@@ -37,20 +37,11 @@ public class ResourceMonitorServiceImpl implements ResourceMonitorService {
 
     @Override
     public void saveSystemResourceMetrics(KafkaCommonMessage<SystemResourceMetricsMessage> message) throws IOException {
-
-        SystemMetricDocument metric = SystemMetricDocument.builder()
-                .resourceName(message.getBody().resourceName())
-                .usagePercent(message.getBody().usagePercent())
-                .alertLevel(message.getBody().alertLevel())
-                .serverName(message.getBody().serverName())
-                .ipAddress(message.getBody().ipAddress())
-                .timestamp(message.getHeader().getTimestamp())
-                .traceId(message.getHeader().getTraceId())
-                .build();
+        SystemMetricDocument document = SystemMetricDocument.toSystemMetricDocument(message);
 
         elasticsearchClient.index(IndexRequest.of(i -> i
                 .index("system_metrics")
-                .document(metric)
+                .document(document)
         ));
     }
 
@@ -73,20 +64,12 @@ public class ResourceMonitorServiceImpl implements ResourceMonitorService {
             List<BulkOperation> operations = new ArrayList<>();
 
             for (KafkaCommonMessage<SystemResourceMetricsMessage> message : batch) {
-                SystemMetricDocument metric = SystemMetricDocument.builder()
-                        .resourceName(message.getBody().resourceName())
-                        .usagePercent(message.getBody().usagePercent())
-                        .alertLevel(message.getBody().alertLevel())
-                        .serverName(message.getBody().serverName())
-                        .ipAddress(message.getBody().ipAddress())
-                        .timestamp(message.getHeader().getTimestamp())
-                        .traceId(message.getHeader().getTraceId())
-                        .build();
+                SystemMetricDocument document = SystemMetricDocument.toSystemMetricDocument(message);
 
                 operations.add(BulkOperation.of(op -> op
                         .index(idx -> idx
                                 .index("system_metrics")
-                                .document(metric)
+                                .document(document)
                         )
                 ));
             }
@@ -125,23 +108,12 @@ public class ResourceMonitorServiceImpl implements ResourceMonitorService {
 
     @Override
     public void saveSystemResourceMetrics5Min(AvgMax value) throws IOException {
-        StatisticalMetricDocument metric = StatisticalMetricDocument.builder()
-                .averageValue(value.getAverageValue())
-                .minTimestamp(value.getMinTimestamp())
-                .minValue(value.getMinValue())
-                .maxTimestamp(value.getMaxTimestamp())
-                .maxValue(value.getMaxValue())
-                .totalValue(value.getTotalValue())
-                .timestamp(value.getTimestamp())
-                .resourceName(value.getResourceName())
-                .serverName(value.getServerName())
-                .build();
+        StatisticalMetricDocument document = StatisticalMetricDocument.toStatisticalMetricDocument(value);
 
         elasticsearchClient.index(IndexRequest.of(i -> i
                 .index("system_metrics_5min")
-                .document(metric)
+                .document(document)
         ));
     }
-
 
 }

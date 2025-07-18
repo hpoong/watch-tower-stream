@@ -1,6 +1,8 @@
 package com.hopoong.audit.persistence.document;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.hopoong.core.message.common.KafkaCommonMessage;
+import com.hopoong.core.message.resourcemonitor.SystemResourceMetricsMessage;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -17,4 +19,18 @@ public class SystemMetricDocument {
     private String serverName;
     private String ipAddress;
     private String traceId;
+
+
+
+    public static SystemMetricDocument toSystemMetricDocument(KafkaCommonMessage<SystemResourceMetricsMessage> message) {
+        return SystemMetricDocument.builder()
+                .resourceName(message.getBody().resourceName())
+                .usagePercent(message.getBody().usagePercent())
+                .alertLevel(message.getBody().alertLevel())
+                .serverName(message.getBody().serverName())
+                .ipAddress(message.getBody().ipAddress())
+                .timestamp(message.getHeader().getTimestamp())
+                .traceId(message.getHeader().getTraceId())
+                .build();
+    }
 }
