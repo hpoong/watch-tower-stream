@@ -1,7 +1,7 @@
 # 리소스 5분 사용량
 
 
-PUT statistical_metric_5min
+PUT system_metrics_5min
 {
   "mappings": {
     "properties": {
