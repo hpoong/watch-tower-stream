@@ -1,8 +1,10 @@
 package com.hopoong.resource.batch;
 
 import com.hopoong.core.util.RandomUtil;
-import com.hopoong.resource.usecase.resourcemonitor.ResourceMonitorService;
+import com.hopoong.resource.api.resourcemonitor.model.ResourceUsage;
 import com.hopoong.resource.event.ResourceMonitorEventHandler;
+import com.hopoong.resource.usecase.resourcemonitor.ResourcePatternService;
+import com.hopoong.resource.usecase.resourcemonitor.ResourceSimulatorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -11,8 +13,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ResourceMonitorBatchService {
 
-    private final ResourceMonitorService resourceMonitorService;
     private final ResourceMonitorEventHandler resourceMonitorEventHandler;
+    private final ResourceSimulatorService resourceSimulatorService;
+    private final ResourcePatternService resourcePatternService;
 
 
     @Scheduled(fixedRate = 60000)
@@ -20,13 +23,14 @@ public class ResourceMonitorBatchService {
         String serverName = RandomUtil.getRandomServerName();
         String ipAddress = RandomUtil.getRandomIpAddress();
 
-        double cpuUsage = resourceMonitorService.measureCpuUsage();
-        double memoryUsage = resourceMonitorService.measureMemoryUsage();
-        double diskUsage = resourceMonitorService.measureDiskUsage();
+        ResourceUsage simulate = resourceSimulatorService.simulate();
+        double cpuUsage = simulate.getCpu();
+        double memoryUsage = simulate.getMemory();
+        double diskUsage = simulate.getDisk();
 
-        String cpuLevel = resourceMonitorService.determineAlert(cpuUsage);
-        String memLevel = resourceMonitorService.determineAlert(memoryUsage);
-        String diskLevel = resourceMonitorService.determineAlert(diskUsage);
+        String cpuLevel = resourcePatternService.determineAlert(cpuUsage);
+        String memLevel = resourcePatternService.determineAlert(memoryUsage);
+        String diskLevel = resourcePatternService.determineAlert(diskUsage);
 
         resourceMonitorEventHandler.handleSystemResourceMetricsEvent("CPU", cpuUsage, cpuLevel, serverName, ipAddress);
         resourceMonitorEventHandler.handleSystemResourceMetricsEvent("Memory", memoryUsage, memLevel, serverName, ipAddress);
