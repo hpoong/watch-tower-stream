@@ -1,5 +1,5 @@
 from elasticsearch import Elasticsearch
-from db.elastic.query_builder import build_query
+from usecase.anomaly_detector.query_builder import build_query
 
 
 def fetch_usage(
