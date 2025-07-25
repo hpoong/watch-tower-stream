@@ -38,12 +38,13 @@ def calculate_isolation_score(
 
     X = np.array(data).reshape(-1, 1)
 
+    # 모델 학습
     model = IsolationForest(contamination=contamination, random_state=random_state)
     model.fit(X)
 
-    # 마지막 값에 대한 판단만 리턴
+    # 마지막 값 판단
     last_value = X[-1].reshape(1, -1)
     prediction = model.predict(last_value)[0]     # -1: 이상, 1: 정상
-    score = model.decision_function(last_value)[0]  # 낮을수록 이상
+    score = model.decision_function(last_value)[0]  # 점수 반환 - 낮을수록 이상
 
     return prediction, score

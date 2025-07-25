@@ -1,4 +1,9 @@
+import io
+
 import pandas as pd
+import matplotlib.pyplot as plt
+from starlette.responses import StreamingResponse
+
 
 def preprocess_usage_data(usage, window_size=10, predict_horizon=10):
     """
@@ -80,7 +85,7 @@ def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     timestamp 컬럼을 기준으로 시간 기반 피처를 추가합니다.
     """
-    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    # df["timestamp"] = pd.to_datetime(df["timestamp"])
     df["hour"] = df["timestamp"].dt.hour
     df["minute"] = df["timestamp"].dt.minute
     df["weekday"] = df["timestamp"].dt.weekday
@@ -121,10 +126,21 @@ def build_training_data(df, window_size=10, predict_horizon=10):
 
 
 
-def fetch_usage_dataframe():
-# | timestamp           | usagePercent |
-# |---------------------|--------------|
-# | 2025-07-24 10:00:00 | 52.3         |
-# | 2025-07-24 10:01:00 | 53.1         |
-# | ...                 | ...          |
-    return None
+def plot_usage_series(df):
+    fig, ax = plt.subplots(figsize=(15, 4))
+    ax.plot(df['timestamp'], df['usagePercent'], label='Usage %')
+    ax.set_title("System Resource Usage Over Time")
+    ax.set_xlabel("Timestamp")
+    ax.set_ylabel("Usage (%)")
+    ax.grid(True)
+    ax.legend()
+    plt.tight_layout()
+
+    # 이미지로 변환
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png")
+    buf.seek(0)
+
+    # 리턴 (image/png)
+    return StreamingResponse(buf, media_type="image/png")
+

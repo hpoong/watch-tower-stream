@@ -6,10 +6,10 @@ from fastapi import Depends
 from exception.exception_handler import add_exception_handlers
 from response.success_response import SuccessResponse
 from security.security_config import GlobalAuthMiddleware
-from usecase.anomaly_detector.fetcher import fetch_usage
+from usecase.anomaly_detector.fetcher import fetch_usage, fetch_usage_dataframe
 from usecase.anomaly_detector.detection_methods import calculate_z_score, calculate_isolation_score
 from usecase.predictive.resource.resource_methods import preprocess_usage_data, preprocess_usage_dataframe, \
-    fetch_usage_dataframe, add_time_features, build_training_data
+    add_time_features, build_training_data, plot_usage_series
 
 # middleware
 app = FastAPI()
@@ -76,25 +76,27 @@ def test(es=Depends(get_es_client)):
 
     for server in servers:
         for resource in resources:
-            usage = fetch_usage(es, server, resource, 180)
-            if not usage:
-                print(f"{server}/{resource}: 데이터 없음")
-                continue
-
-            print(usage) # [56, 55, 58, 57 ... ] 180 길이 데이터
+            # usage = fetch_usage(es, server, resource, 180)
+            # if not usage:
+            #     print(f"{server}/{resource}: 데이터 없음")
+            #     continue
+            #
+            # print(usage) # [56, 55, 58, 57 ... ] 180 길이 데이터
 
 
             ######## 피처 엔지니어링 전처리 함수
-
             # 기본 예제 – 리스트만 있는 시계열
-            X, y = preprocess_usage_data(usage, window_size=10, predict_horizon=10)
-            print(f"입력 X shape: ({len(X)}, {len(X[0])})")
-            print(f"타깃 y shape: ({len(y)},)")
-            print(f"예시 row: {X[0]} → {y[0]}")
-
+            # X, y = preprocess_usage_data(usage, window_size=10, predict_horizon=10)
+            # # 전체 개수 확인
+            # print(f"총 샘플 수: {len(X)}")
+            #
+            # # 앞쪽 3개만 보기
+            # for i in range(3):
+            #     print(f"X[{i}] = {X[i]}")
+            #     print(f"y[{i}] = {y[i]}")
 
             # Pandas 기반 슬라이딩 윈도우 (시간 피처 포함)
-            df = fetch_usage_dataframe()     # timestamp + usagePercent
+            df = fetch_usage_dataframe(es, server, resource, 30)     # timestamp + usagePercent
             df = add_time_features(df)       # 시간 피처 추가
             X, y, columns = preprocess_usage_dataframe(df, window_size=10, predict_horizon=10)
             print(f"X shape: ({len(X)}, {len(X[0])})")
@@ -104,7 +106,7 @@ def test(es=Depends(get_es_client)):
 
 
             # 슬라이딩 윈도우 + 시간 피처 전처리 통합 함수
-            df = fetch_usage_dataframe()         # timestamp + usagePercent
+            df = fetch_usage_dataframe(es, server, resource, 30)     # timestamp + usagePercent
             df = add_time_features(df)           # 시간 피처 추가
             X, y = build_training_data(df)
             print(f"X shape: ({len(X)}, {len(X[0])})")
