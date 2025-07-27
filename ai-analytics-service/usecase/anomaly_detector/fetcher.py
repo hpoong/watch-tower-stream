@@ -51,7 +51,7 @@ def fetch_usage_dataframe(
         ]
         print(usage_list)
         df = pd.DataFrame(usage_list)
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
         return df
     except Exception as e:
         print(f"[ERROR] fetch_usage_dataframe failed for {server}/{resource}: {e}")
