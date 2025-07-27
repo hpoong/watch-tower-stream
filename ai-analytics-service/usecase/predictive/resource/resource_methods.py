@@ -1,8 +1,12 @@
 import io
+import json
+import datetime
 
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.model_selection import GridSearchCV
 from starlette.responses import StreamingResponse
+import xgboost as xgb
 
 
 def preprocess_usage_data(usage, window_size=10, predict_horizon=10):
@@ -152,6 +156,42 @@ def build_training_data(df, window_size=10, predict_horizon=10):
 
 
 
+def tune_xgboost_hyperparameters(X_train, y_train, param_grid=None, cv=3):
+    if param_grid is None:
+        param_grid = {
+            'max_depth': [3, 4, 5],
+            'learning_rate': [0.1, 0.05],
+            'n_estimators': [100, 200],
+            'subsample': [0.8],
+            'colsample_bytree': [0.8],
+            'reg_alpha': [0.1],
+            'reg_lambda': [1.0],
+            'gamma': [0, 0.1],
+        }
+
+    model = xgb.XGBRegressor()
+    grid = GridSearchCV(
+        estimator=model,
+        param_grid=param_grid,
+        cv=cv,
+        scoring='neg_root_mean_squared_error',
+        verbose=1
+    )
+
+    grid.fit(X_train, y_train)
+    best_model = grid.best_estimator_
+    best_params = grid.best_params_
+    best_score = -grid.best_score_
+
+    # best_params 저장
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+    filename = f"best_params_{ts}.json"
+    with open(filename, "w") as f:
+        json.dump(best_params, f, indent=4)
+
+    return best_model, best_params, best_score
+
+
 
 def plot_usage_series(df):
     fig, ax = plt.subplots(figsize=(15, 4))
@@ -171,3 +211,28 @@ def plot_usage_series(df):
     # 리턴 (image/png)
     return StreamingResponse(buf, media_type="image/png")
 
+
+
+def plot_prediction_result(y_true, y_pred):
+    """
+    예측 결과 시각화 함수
+    y_true: 실제 값
+    y_pred: 예측 값
+    반환: StreamingResponse (image/png)
+    """
+    fig, ax = plt.subplots(figsize=(15, 4))
+    ax.plot(y_true, label="실제값", marker="o")
+    ax.plot(y_pred, label="예측값", marker="x")
+    ax.set_title("예측 결과 (실제 vs 예측)")
+    ax.set_xlabel("Time Index")
+    ax.set_ylabel("Usage (%)")
+    ax.grid(True)
+    ax.legend()
+    plt.tight_layout()
+
+    # 이미지로 변환
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png")
+    buf.seek(0)
+
+    return StreamingResponse(buf, media_type="image/png")
