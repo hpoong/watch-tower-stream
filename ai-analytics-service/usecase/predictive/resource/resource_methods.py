@@ -83,14 +83,36 @@ def preprocess_usage_dataframe(df: pd.DataFrame, window_size=10, predict_horizon
 
 def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
     """
-    timestamp 컬럼을 기준으로 시간 기반 피처를 추가합니다.
+    timestamp 컬럼 기준으로 다양한 시간 기반 피처를 생성
     """
-    # df["timestamp"] = pd.to_datetime(df["timestamp"])
+
+    df["timestamp"] = df["timestamp"].dt.tz_convert("Asia/Seoul")
     df["hour"] = df["timestamp"].dt.hour
     df["minute"] = df["timestamp"].dt.minute
     df["weekday"] = df["timestamp"].dt.weekday
+    df["month"] = df["timestamp"].dt.month
+
+    # 주말 여부
     df["is_weekend"] = df["weekday"].apply(lambda x: 1 if x >= 5 else 0)
-    return df
+
+    # 계절 (한국 기준)
+    def get_season(month):
+        if month in [3, 4, 5]:
+            return 0  # 봄
+        elif month in [6, 7, 8]:
+            return 1  # 여름
+        elif month in [9, 10, 11]:
+            return 2  # 가을
+        else:
+            return 3  # 겨울
+
+    df["season"] = df["month"].apply(get_season)
+
+    # 야간 여부 (0~6시)
+    df["is_night"] = df["hour"].apply(lambda h: 1 if 0 <= h <= 6 else 0)
+
+    # 업무 시간 여부 (9~18시)
+    df["is_business_hour"] = df["hour"].apply(lambda h: 1 if 9 <= h <= 18 else 0)
 
 
 def build_training_data(df, window_size=10, predict_horizon=10):
@@ -104,25 +126,30 @@ def build_training_data(df, window_size=10, predict_horizon=10):
     total = len(df)
 
     for i in range(total - window_size - predict_horizon + 1):
-        # 슬라이딩 윈도우: usagePercent만 추출
+        # 과거 사용률 시퀀스
         usage_window = df["usagePercent"].iloc[i : i + window_size].tolist()
 
-        # 시간 피처: 예측 기준 시점(t)의 시간 정보
-        time_row = df.iloc[i + window_size]  # t 시점
-        hour = time_row["hour"]
-        minute = time_row["minute"]
-        weekday = time_row["weekday"]
-        is_weekend = time_row["is_weekend"]
+        # 예측 기준 시점(t)의 시간 피처
+        t_row = df.iloc[i + window_size]
+        time_features = [
+            t_row["hour"],
+            t_row["minute"],
+            t_row["weekday"],
+            t_row["is_weekend"],
+            t_row["month"],
+            t_row["season"],
+            t_row["is_night"],
+            t_row["is_business_hour"],
+        ]
 
-        # 입력: 사용률 시계열 + 시간 피처
-        features = usage_window + [hour, minute, weekday, is_weekend]
+        # 입력 피처 구성
+        features = usage_window + time_features
         X.append(features)
 
-        # 타깃 y: t + predict_horizon - 1 지점의 usage
+        # 타깃 값: t + predict_horizon - 1 시점의 usage
         target = df["usagePercent"].iloc[i + window_size + predict_horizon - 1]
         y.append(target)
 
-    return X, y
 
 
 
