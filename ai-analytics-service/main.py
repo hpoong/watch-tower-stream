@@ -1,18 +1,19 @@
-from fastapi import FastAPI, Request, HTTPException
+import pandas as pd
+from fastapi import Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
-import xgboost as xgb
+
 from common.service_type_enum import ServiceTypeEnum
 from db.elastic.elastic_client import get_es_client
-from fastapi import Depends
 from exception.exception_handler import add_exception_handlers
 from response.success_response import SuccessResponse
 from security.security_config import GlobalAuthMiddleware
-from usecase.anomaly_detector.fetcher import fetch_usage, fetch_usage_dataframe
 from usecase.anomaly_detector.detection_methods import calculate_z_score, calculate_isolation_score
-from usecase.predictive.resource.resource_methods import preprocess_usage_data, preprocess_usage_dataframe, \
-    add_time_features, build_training_data, plot_usage_series, plot_prediction_result, tune_xgboost_hyperparameters
+from usecase.anomaly_detector.fetcher import fetch_usage, fetch_usage_dataframe
+from usecase.predictive.resource.resource_methods import add_time_features, build_training_data, plot_prediction_result, \
+    tune_xgboost_hyperparameters, \
+    predict_future_steps
 
 # middleware
 app = FastAPI()
@@ -76,30 +77,34 @@ def build_recent_metrics_query(es=Depends(get_es_client)):
 def predict_resource_usage(es=Depends(get_es_client)):
     servers = ["Server-01"]
     resources = ["CPU"]
+    window_size = 10           # 과거 10분 사용률 사용
+    predict_horizon = 60       # 앞으로 60분 예측
 
     for server in servers:
         for resource in resources:
-            # 데이터 수집 및 전처리
-            df = fetch_usage_dataframe(es, server, resource, 30)
+            # 데이터 수집
+            df = fetch_usage_dataframe(es, server, resource, 120)
             df = add_time_features(df)
-            X, y = build_training_data(df)
+            print(df.tail(5))
 
+            X, y = build_training_data(df, window_size, predict_horizon)
             if not X or not y:
-                print("데이터 부족으로 학습 불가")
                 return {"error": "데이터 부족"}
 
-            # 학습/검증 분리
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
-
-            # 하이퍼파라미터 튜닝 + 모델 학습
+            # 모델 학습
+            X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, shuffle=False)
             model, best_params, best_cv_rmse = tune_xgboost_hyperparameters(X_train, y_train)
-            print(f"[{server}/{resource}] BestParams={best_params}, CV RMSE={best_cv_rmse:.3f}")
 
-            # 예측 및 평가
-            y_pred = model.predict(X_test)
-            rmse = mean_squared_error(y_test, y_pred, squared=False)
-            print(f"[{server}/{resource}] Test RMSE: {rmse:.3f}")
-            print("예측 결과 샘플:", list(zip(y_test[:5], y_pred[:5])))
+            # 현재 이후 60분간 예측
+            timestamps, predictions = predict_future_steps(
+                df=df,
+                model=model,
+                window_size=window_size,
+                predict_steps=predict_horizon
+            )
 
-            # 시각화 응답
-            return plot_prediction_result(y_test, y_pred)
+            return plot_prediction_result(
+                y_true=predictions,
+                y_pred=predictions,  # 비교 대상 없으므로 동일하게
+                timestamps=pd.Series(timestamps)
+            )

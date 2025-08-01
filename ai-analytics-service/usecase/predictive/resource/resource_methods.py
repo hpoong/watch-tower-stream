@@ -1,12 +1,12 @@
+import datetime
 import io
 import json
-import datetime
 
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
+import xgboost as xgb
 from sklearn.model_selection import GridSearchCV
 from starlette.responses import StreamingResponse
-import xgboost as xgb
 
 
 def preprocess_usage_data(usage, window_size=10, predict_horizon=10):
@@ -83,6 +83,38 @@ def preprocess_usage_dataframe(df: pd.DataFrame, window_size=10, predict_horizon
 
 
 
+def predict_future_steps(df: pd.DataFrame, model, window_size: int, predict_steps: int = 10):
+    from datetime import timedelta
+
+    recent_df = df.iloc[-window_size:].copy()
+    recent_usages = recent_df["usagePercent"].tolist()
+    last_timestamp = recent_df["timestamp"].iloc[-1]
+    predictions = []
+    timestamps = []
+
+    for i in range(predict_steps):
+        forecast_time = last_timestamp + timedelta(minutes=i+1)
+        hour = forecast_time.hour
+        minute = forecast_time.minute
+        weekday = forecast_time.weekday()
+        month = forecast_time.month
+        is_weekend = 1 if weekday >= 5 else 0
+        season = (month - 3) // 3 if 3 <= month <= 11 else 3
+        is_night = 1 if 0 <= hour <= 6 else 0
+        is_business_hour = 1 if 9 <= hour <= 18 else 0
+
+        time_features = [
+            hour, minute, weekday, is_weekend,
+            month, season, is_night, is_business_hour
+        ]
+
+        features = recent_usages[-window_size:] + time_features
+        y_pred = model.predict([features])[0]
+        predictions.append(y_pred)
+        timestamps.append(forecast_time)
+        recent_usages.append(y_pred)
+
+    return timestamps, predictions
 
 
 def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -117,43 +149,43 @@ def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # 업무 시간 여부 (9~18시)
     df["is_business_hour"] = df["hour"].apply(lambda h: 1 if 9 <= h <= 18 else 0)
+    return df
 
 
 def build_training_data(df, window_size=10, predict_horizon=10):
-    """
-    슬라이딩 윈도우 기반 X, y 재구성 (시간 피처 포함)
-    - df: timestamp 포함된 시계열 DataFrame
-    - window_size: 과거 몇 개 포인트로 예측할지
-    - predict_horizon: 얼마나 미래를 예측할지 (예: 10분 후)
-    """
     X, y = [], []
     total = len(df)
 
     for i in range(total - window_size - predict_horizon + 1):
-        # 과거 사용률 시퀀스
-        usage_window = df["usagePercent"].iloc[i : i + window_size].tolist()
+        try:
+            # 과거 사용률 시퀀스
+            usage_window = df["usagePercent"].iloc[i : i + window_size].tolist()
 
-        # 예측 기준 시점(t)의 시간 피처
-        t_row = df.iloc[i + window_size]
-        time_features = [
-            t_row["hour"],
-            t_row["minute"],
-            t_row["weekday"],
-            t_row["is_weekend"],
-            t_row["month"],
-            t_row["season"],
-            t_row["is_night"],
-            t_row["is_business_hour"],
-        ]
+            # 예측 기준 시점(t)의 시간 피처
+            t_row = df.iloc[i + window_size]
+            time_features = [
+                t_row["hour"],
+                t_row["minute"],
+                t_row["weekday"],
+                t_row["is_weekend"],
+                t_row["month"],
+                t_row["season"],
+                t_row["is_night"],
+                t_row["is_business_hour"],
+            ]
 
-        # 입력 피처 구성
-        features = usage_window + time_features
-        X.append(features)
+            features = usage_window + time_features
+            X.append(features)
 
-        # 타깃 값: t + predict_horizon - 1 시점의 usage
-        target = df["usagePercent"].iloc[i + window_size + predict_horizon - 1]
-        y.append(target)
+            # 타깃 값: t + predict_horizon - 1 시점의 usage
+            target = df["usagePercent"].iloc[i + window_size + predict_horizon - 1]
+            y.append(target)
 
+        except Exception as e:
+            print(f"오류 발생 at index {i}: {e}")
+            continue
+
+    return X, y
 
 
 def tune_xgboost_hyperparameters(X_train, y_train, param_grid=None, cv=3):
@@ -213,26 +245,31 @@ def plot_usage_series(df):
 
 
 
-def plot_prediction_result(y_true, y_pred):
+def plot_prediction_result(y_true, y_pred, timestamps=None):
     """
     예측 결과 시각화 함수
     y_true: 실제 값
     y_pred: 예측 값
     반환: StreamingResponse (image/png)
     """
-    fig, ax = plt.subplots(figsize=(15, 4))
-    ax.plot(y_true, label="실제값", marker="o")
-    ax.plot(y_pred, label="예측값", marker="x")
-    ax.set_title("예측 결과 (실제 vs 예측)")
-    ax.set_xlabel("Time Index")
-    ax.set_ylabel("Usage (%)")
-    ax.grid(True)
-    ax.legend()
-    plt.tight_layout()
+    # matplotlib로 그래프 생성
+    fig, ax = plt.subplots(figsize=(12, 5))
+    ax.plot(timestamps, y_true, label="Actual", marker='o')
+    ax.plot(timestamps, y_pred, label="Predicted", marker='x')
+    ax.axvline(x=timestamps.iloc[0], color='gray', linestyle='--', label='Prediction Start')
 
-    # 이미지로 변환
+    ax.set_xlabel("Timestamp")
+    ax.set_ylabel("Usage Percent")
+    ax.set_title("Resource Usage Forecast")
+    ax.legend()
+    ax.grid(True)
+
+    # 이미지 버퍼로 저장
     buf = io.BytesIO()
+    plt.tight_layout()
     fig.savefig(buf, format="png")
+    plt.close(fig)
     buf.seek(0)
 
+    # FastAPI용 StreamingResponse 반환
     return StreamingResponse(buf, media_type="image/png")
