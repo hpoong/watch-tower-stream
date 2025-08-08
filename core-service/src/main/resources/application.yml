@@ -2,3 +2,10 @@ logging:
   config: classpath:logback/logback-spring.xml
   level:
     root: info
+
+
+
+elasticsearch:
+  index:
+    system-metrics: system_metrics
+    system-metrics-5min: system_metrics_5min
