@@ -33,3 +33,17 @@ elasticsearch:
   host: localhost
   port: 9200
   scheme: http
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    prometheus:
+      enabled: true
+
+# 선택: 공통 태그로 환경/앱 이름 부여(라벨 폭증 방지)
+management.metrics.tags:
+  app: resource-service
+  component: db-writer
