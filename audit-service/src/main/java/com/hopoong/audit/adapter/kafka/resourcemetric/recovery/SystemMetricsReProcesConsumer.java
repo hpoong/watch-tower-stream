@@ -5,6 +5,7 @@ import com.hopoong.audit.adapter.kafka.resourcemetric.transformer.BatchedDbWrite
 import com.hopoong.audit.usecase.resourcemonitor.ResourceMonitorService;
 import com.hopoong.core.topic.KafkaTopicManager;
 import com.hopoong.core.util.LoggerUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -20,6 +21,7 @@ public class SystemMetricsReProcesConsumer {
 
     private final ObjectMapper objectMapper;
     private final ResourceMonitorService resourceMonitorService;
+    private final MeterRegistry meterRegistry;
 
     /*
      * system-resource-metrics 재처리
@@ -29,7 +31,7 @@ public class SystemMetricsReProcesConsumer {
         KStream<String, String> stream = builder.stream(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC);
         stream
             .peek((key, value) -> LoggerUtil.section(log, "[REPROCESS] 완료"))
-            .transform(() -> new BatchedDbWriterTransformer(objectMapper, resourceMonitorService));
+            .transform(() -> new BatchedDbWriterTransformer(objectMapper, resourceMonitorService, meterRegistry));
 
         return stream;
     }
