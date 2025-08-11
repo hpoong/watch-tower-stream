@@ -59,7 +59,6 @@ public class SystemMetricsDlqRecoveryConsumer {
 
     private boolean isTraceIdInResourceMonitor(String value) {
         try {
-            Thread.sleep(5000);
 
             KafkaCommonMessage<SystemResourceMetricsMessage> message =
                     objectMapper.readValue(value, new TypeReference<>() {});
