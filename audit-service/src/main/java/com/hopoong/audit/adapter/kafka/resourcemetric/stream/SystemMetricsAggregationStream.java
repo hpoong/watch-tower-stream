@@ -18,10 +18,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.util.function.ThrowingConsumer;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -91,7 +88,7 @@ public class SystemMetricsAggregationStream extends AbstractMetricsStream {
                 .windowedBy(timeWindows)
                 .aggregate(
                         AvgMax::new,
-                        (key, value, aggregate) -> aggregate.add(value.getBody().usagePercent(), LocalDateTime.now()),
+                        (key, value, aggregate) -> aggregate.add(value.getBody().usagePercent(), LocalDateTime.now(ZoneOffset.UTC)),
                         Materialized.with(Serdes.String(), new AvgMaxSerde(objectMapper))
                 )
                 .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()));
@@ -112,8 +109,13 @@ public class SystemMetricsAggregationStream extends AbstractMetricsStream {
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
 
+        LocalDateTime endDateTimeUtc =
+                Instant.ofEpochMilli(startEpoch)
+                        .atZone(ZoneOffset.UTC)
+                        .toLocalDateTime();
+
         String[] keyParts = windowedKey.key().split(":");
-        value.setTimestamp(endDateTime);
+        value.setTimestamp(endDateTimeUtc);
         value.setServerName(keyParts[0]);
         value.setResourceName(keyParts[1]);
 
