@@ -1,0 +1,114 @@
+services:
+  # ---------------- Kafka & Zookeeper ----------------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.8.0
+    container_name: user-service-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks: [dev-net]
+
+  kafka:
+    image: confluentinc/cp-kafka:7.8.0
+    container_name: user-service-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # 리스너 바인딩(컨테이너 내부 바인딩 주소)
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_INTERNAL://0.0.0.0:29092
+      # 외부/내부에서 접근할 때 알려줄 주소
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      # 단일 브로커 트랜잭션 로그(권장)
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    volumes:
+      - user-service-kafka-data:/var/lib/kafka/data
+    networks: [dev-net]
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.8.0
+    container_name: user-service-schema-registry
+    depends_on:
+      - kafka
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:29092
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      # 단일 브로커에서 _schemas 토픽 생성 실패 방지
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
+    networks: [dev-net]
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    container_name: user-service-kafka-ui
+    ports:
+      - "7081:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=Kafka-Cluster
+      - KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      - kafka
+    networks: [dev-net]
+
+  # ---------------- Redis ----------------
+  redis:
+    image: redis:7.2
+    container_name: user-service-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ./redis-data:/data
+    networks: [dev-net]
+
+  # ---------------- Elasticsearch ----------------
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: user-service-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    volumes:
+      - ./elasticsearch-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks: [dev-net]
+
+  # ---------------- PostgreSQL ----------------
+  postgres:
+    image: postgres:15
+    container_name: user-service-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: main_db
+    volumes:
+      - ./postgresql-data:/var/lib/postgresql/data
+    networks: [dev-net]
+
+volumes:
+  user-service-kafka-data:
+
+networks:
+  dev-net:
+    driver: bridge
