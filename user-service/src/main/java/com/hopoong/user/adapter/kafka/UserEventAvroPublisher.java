@@ -10,8 +10,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -82,14 +80,16 @@ public class UserEventAvroPublisher {
 		return id.toString();
 	}
 
+	private static final String SCHEMA_PATH = "/avro/UserEvent.avsc";
+
 	private static Schema loadSchema() {
-		try (InputStream is = UserEventAvroPublisher.class.getResourceAsStream("/avro/UserEvent.avsc")) {
+		try (InputStream is = UserEventAvroPublisher.class.getResourceAsStream(SCHEMA_PATH)) {
 			if (is == null) {
-				throw new IllegalStateException("Avro schema not found: /avro/UserEvent.avsc");
+				throw new IllegalStateException("Avro schema not found: " + SCHEMA_PATH);
 			}
-			return new Schema.Parser().parse(String.valueOf(new InputStreamReader(is, StandardCharsets.UTF_8)));
+			return new Schema.Parser().parse(is);
 		} catch (Exception e) {
-			return null;
+			throw new IllegalStateException("Failed to load/parse Avro schema: " + SCHEMA_PATH, e);
 		}
 	}
-} 
+}
