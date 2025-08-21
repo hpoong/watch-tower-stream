@@ -22,7 +22,7 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       # 리스너 바인딩(컨테이너 내부 바인딩 주소)
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_INTERNAL://0.0.0.0:29092
+      KAFKA_LISTENERS: PLAINTEXT://:9092,PLAINTEXT_INTERNAL://:29092
       # 외부/내부에서 접근할 때 알려줄 주소
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
@@ -62,49 +62,49 @@ services:
       - kafka
     networks: [dev-net]
 
-  # ---------------- Redis ----------------
-  redis:
-    image: redis:7.2
-    container_name: user-service-redis
-    ports:
-      - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
-      - ./redis-data:/data
-    networks: [dev-net]
-
-  # ---------------- Elasticsearch ----------------
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
-    container_name: user-service-elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
-    volumes:
-      - ./elasticsearch-data:/usr/share/elasticsearch/data
-    ports:
-      - "9200:9200"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    networks: [dev-net]
-
-  # ---------------- PostgreSQL ----------------
-  postgres:
-    image: postgres:15
-    container_name: user-service-postgres
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: main_db
-    volumes:
-      - ./postgresql-data:/var/lib/postgresql/data
-    networks: [dev-net]
+#  # ---------------- Redis ----------------
+#  redis:
+#    image: redis:7.2
+#    container_name: user-service-redis
+#    ports:
+#      - "6379:6379"
+#    command: ["redis-server", "--appendonly", "yes"]
+#    volumes:
+#      - ./redis-data:/data
+#    networks: [dev-net]
+#
+#  # ---------------- Elasticsearch ----------------
+#  elasticsearch:
+#    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+#    container_name: user-service-elasticsearch
+#    environment:
+#      - discovery.type=single-node
+#      - xpack.security.enabled=false
+#      - bootstrap.memory_lock=true
+#      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+#    volumes:
+#      - ./elasticsearch-data:/usr/share/elasticsearch/data
+#    ports:
+#      - "9200:9200"
+#    ulimits:
+#      memlock:
+#        soft: -1
+#        hard: -1
+#    networks: [dev-net]
+#
+#  # ---------------- PostgreSQL ----------------
+#  postgres:
+#    image: postgres:15
+#    container_name: user-service-postgres
+#    ports:
+#      - "5432:5432"
+#    environment:
+#      POSTGRES_USER: admin
+#      POSTGRES_PASSWORD: admin
+#      POSTGRES_DB: main_db
+#    volumes:
+#      - ./postgresql-data:/var/lib/postgresql/data
+#    networks: [dev-net]
 
 volumes:
   user-service-kafka-data:
