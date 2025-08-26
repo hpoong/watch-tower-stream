@@ -9,4 +9,7 @@ public class KafkaTopicManager {
 
 
     public static final String SYSTEM_THRESHOLD_TOPIC = "system-threshold";
+
+
+    public static final String USER_ACTIVITY_EVENTS = "user-activity-events";
 }
