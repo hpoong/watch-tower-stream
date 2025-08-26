@@ -2,7 +2,6 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.3.1'
 	id 'io.spring.dependency-management' version '1.1.5'
-	id 'com.github.davidmc24.gradle.plugin.avro' version '1.9.1'
 }
 
 java {
@@ -27,7 +26,6 @@ dependencies {
 	// kafka
 	implementation 'org.springframework.kafka:spring-kafka'
 	implementation 'io.confluent:kafka-avro-serializer:7.8.0'
-	implementation 'org.apache.avro:avro:1.11.3'
 
 	// test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -39,19 +37,3 @@ tasks.named('test') {
 }
 
 
-
-avro {
-	createSetters = true
-	fieldVisibility = "PRIVATE"
-	stringType = "String"
-	enableDecimalLogicalType = true
-	// default srcDir: src/main/avro, output: build/generated-main-avro-java
-}
-
-sourceSets {
-	main {
-		java {
-			srcDir("$buildDir/generated-main-avro-java")
-		}
-	}
-}
