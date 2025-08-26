@@ -1,15 +1,12 @@
 package com.hopoong.user.adapter.kafka;
 
+import com.hopoong.avro.user.UserEvent;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.generic.GenericRecordBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
-import java.io.InputStream;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -17,8 +14,6 @@ import java.util.UUID;
 @Slf4j
 @Component
 public class UserEventAvroPublisher {
-
-	private static final Schema USER_EVENT_SCHEMA = loadSchema();
 
 	private final KafkaTemplate<String, Object> avroKafkaTemplate;
 
@@ -46,28 +41,28 @@ public class UserEventAvroPublisher {
 		Objects.requireNonNull(occurredAt, "occurredAt must not be null");
 		Objects.requireNonNull(createdAt, "createdAt must not be null");
 
-		GenericRecord record = new GenericRecordBuilder(USER_EVENT_SCHEMA)
-				.set("id", id.toString())
-				.set("tenant_id", tenantId)
-				.set("user_id", userId)
-				.set("session_id", sessionId)
-				.set("event_type", eventType)
-				.set("feature", feature)
-				.set("occurred_at", occurredAt.toInstant().toEpochMilli())
-				.set("created_at", createdAt.toInstant().toEpochMilli())
+		UserEvent event = UserEvent.newBuilder()
+				.setId(id)
+				.setTenantId(tenantId)
+				.setUserId(userId)
+				.setSessionId(sessionId)
+				.setEventType(eventType)
+				.setFeature(feature)
+				.setOccurredAt(occurredAt.toInstant())
+				.setCreatedAt(createdAt.toInstant())
 				.build();
 
 		String recordKey = buildRecordKey(tenantId, userId, sessionId, id);
 
-		avroKafkaTemplate.send(topic, recordKey, record)
-				.whenComplete((result, ex) -> {
-					if (ex != null) {
-						log.error("Failed to publish UserEvent to topic {} with key {}", topic, recordKey, ex);
-					} else {
-						log.debug("Published UserEvent to topic {} partition {} offset {}", topic,
-								result.getRecordMetadata().partition(), result.getRecordMetadata().offset());
-					}
-				});
+		avroKafkaTemplate.send(topic, recordKey, event)
+			.whenComplete((result, ex) -> {
+				if (ex != null) {
+					log.error("Failed to publish UserEvent to topic {} with key {}", topic, recordKey, ex);
+				} else {
+					log.debug("Published UserEvent to topic {} partition {} offset {}", topic,
+							result.getRecordMetadata().partition(), result.getRecordMetadata().offset());
+				}
+			});
 	}
 
 	private String buildRecordKey(String tenantId, String userId, String sessionId, UUID id) {
@@ -78,18 +73,5 @@ public class UserEventAvroPublisher {
 			return tenantId + ":" + userId;
 		}
 		return id.toString();
-	}
-
-	private static final String SCHEMA_PATH = "/avro/UserEvent.avsc";
-
-	private static Schema loadSchema() {
-		try (InputStream is = UserEventAvroPublisher.class.getResourceAsStream(SCHEMA_PATH)) {
-			if (is == null) {
-				throw new IllegalStateException("Avro schema not found: " + SCHEMA_PATH);
-			}
-			return new Schema.Parser().parse(is);
-		} catch (Exception e) {
-			throw new IllegalStateException("Failed to load/parse Avro schema: " + SCHEMA_PATH, e);
-		}
 	}
 }

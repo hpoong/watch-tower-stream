@@ -18,4 +18,4 @@ spring:
       acks: -1
     properties:
       schema.registry.url: http://localhost:8081
-      auto.register.schemas: true
+      auto.register.schemas: true # 처음 생성시 자동 생성.

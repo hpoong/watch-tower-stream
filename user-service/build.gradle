@@ -37,3 +37,21 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+
+
+avro {
+	createSetters = true
+	fieldVisibility = "PRIVATE"
+	stringType = "String"
+	enableDecimalLogicalType = true
+	// default srcDir: src/main/avro, output: build/generated-main-avro-java
+}
+
+sourceSets {
+	main {
+		java {
+			srcDir("$buildDir/generated-main-avro-java")
+		}
+	}
+}
