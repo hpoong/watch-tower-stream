@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "CommonHeaderRecord",
+  "namespace": "com.hopoong.avro.common",
+  "doc": "Kafka 공통 헤더",
+  "fields": [
+    { "name": "topic",   "type": "string", "doc": "발행 토픽명" },
+    { "name": "type",    "type": "string", "doc": "이벤트 타입(도메인용)" },
+    { "name": "source",  "type": "string", "default": "resource-service", "doc": "발행 소스" },
+    { "name": "traceId", "type": "string", "doc": "트레이스/코릴레이션 ID" },
+    {
+      "name": "timestamp",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "헤더 기준 발행 시각(UTC)"
+    },
+    { "name": "version", "type": "string", "default": "v1", "doc": "헤더/페이로드 버전" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "UserActionEventRecord",
+  "namespace": "com.hopoong.avro.record.user",
+  "doc": "사용자 행위 이벤트 레코드",
+  "fields": [
+    { "name": "id", "type": { "type": "string", "logicalType": "uuid" }, "doc": "이벤트 식별자(UUID)" },
+    { "name": "tenantId", "type": "string", "doc": "테넌트 식별자" },
+    { "name": "userId", "type": "string", "doc": "사용자 식별자" },
+    { "name": "sessionId", "type": ["null", "string"], "default": null, "doc": "세션 식별자. 앱 시작/탭 오픈 시 발급" },
+    { "name": "eventType", "type": "string", "doc": "이벤트 유형 (예: CLICK, VIEW, ENTER, LEAVE, ERROR)" },
+    { "name": "feature", "type": ["null", "string"], "default": null, "doc": "기능 단위 식별자" },
+    { "name": "occurredAt", "type": { "type": "long", "logicalType": "timestamp-millis" }, "doc": "이벤트 실제 발생 시각(UTC)" },
+    { "name": "createdAt", "type": { "type": "long", "logicalType": "timestamp-millis" }, "doc": "레코드 생성 시각(UTC)" }
+  ]
+}

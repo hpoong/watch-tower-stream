@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "UserActionEventMessage",
+  "namespace": "com.hopoong.avro.message",
+  "doc": "Header + Body(UserActionEventRecord) 메시지 엔벨로프",
+  "fields": [
+    { "name": "header", "type": "com.hopoong.avro.common.CommonHeaderRecord" },
+    { "name": "body",   "type": "com.hopoong.avro.record.user.UserActionEventRecord", "doc": "이벤트 본문" }
+  ]
+}
