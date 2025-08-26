@@ -14,8 +14,15 @@ spring:
     bootstrap-servers: localhost:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      acks: -1
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      acks: all
     properties:
       schema.registry.url: http://localhost:8081
-      auto.register.schemas: true # 처음 생성시 자동 생성.
+      auto.register.schemas: true       # 처음 생성시 자동 등록
+#    consumer 제외
+#    consumer:
+#      group-id: user-event-consumer-group
+#      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+#      properties:
+#        specific.avro.reader: true

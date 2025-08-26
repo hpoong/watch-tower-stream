@@ -1,9 +1,11 @@
 package com.hopoong.user.api.activity.controller;
 
-import com.hopoong.user.adapter.kafka.UserEventAvroPublisher;
+import com.hopoong.avro.record.user.UserActionEventRecord;
+import com.hopoong.user.adapter.kafka.UserActionEventKafkaPublisher;
+import com.hopoong.user.event.UserActionEventHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -12,15 +14,14 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 @RestController
-@RequestMapping("/activity")
+@RequestMapping("/user/activity")
 @RequiredArgsConstructor
 public class ActivityController {
 
-	private final UserEventAvroPublisher userEventAvroPublisher;
+	private final UserActionEventHandler userActionEventHandler;
 
-	@PostMapping("/events/mock")
+	@GetMapping("/events/mock")
 	public ResponseEntity<Void> publishMockUserEvent() {
-		String topic = "user.activity.events";
 		UUID id = UUID.randomUUID();
 
 		ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -37,17 +38,18 @@ public class ActivityController {
 		OffsetDateTime createdAt = OffsetDateTime.now();
 		OffsetDateTime occurredAt = createdAt.minusSeconds(rnd.nextInt(0, 60));
 
-		userEventAvroPublisher.publishUserEvent(
-				topic,
-				id,
-				tenantId,
-				userId,
-				sessionId,
-				eventType,
-				feature,
-				occurredAt,
-				createdAt
-		);
+		UserActionEventRecord body = UserActionEventRecord.newBuilder()
+				.setId(id)
+				.setTenantId(tenantId)
+				.setUserId(userId)
+				.setSessionId(sessionId)
+				.setEventType(eventType)
+				.setFeature(feature)
+				.setOccurredAt(occurredAt.toInstant())
+				.setCreatedAt(createdAt.toInstant())
+				.build();
+
+		userActionEventHandler.handleSystemResourceMetricsEvent(body);
 
 		return ResponseEntity.accepted().build();
 	}
