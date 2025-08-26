@@ -24,7 +24,7 @@ public class UserActionEventKafkaPublisher<T> implements Consumer<UserActionEven
 
     @Override
     public void accept(UserActionEventRecord message) {
-        publish(message, KafkaTopicManager.USER_ACTIVITY_EVENTS, "USER_ACTIVITY_EVENTS");
+        publish(message, KafkaTopicManager.USER_ACTION_EVENTS, "USER_ACTION_EVENTS");
     }
 
     public void publish(UserActionEventRecord message, String topic, String type) {

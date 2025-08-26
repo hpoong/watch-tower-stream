@@ -1,7 +1,6 @@
-package com.hopoong.user.api.activity.controller;
+package com.hopoong.user.api.action.controller;
 
 import com.hopoong.avro.record.user.UserActionEventRecord;
-import com.hopoong.user.adapter.kafka.UserActionEventKafkaPublisher;
 import com.hopoong.user.event.UserActionEventHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,9 +13,9 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 @RestController
-@RequestMapping("/user/activity")
+@RequestMapping("/user/action")
 @RequiredArgsConstructor
-public class ActivityController {
+public class ActionController {
 
 	private final UserActionEventHandler userActionEventHandler;
 
