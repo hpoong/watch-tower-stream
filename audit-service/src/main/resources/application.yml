@@ -19,15 +19,14 @@ spring:
       timeout: 6000
   kafka:
     bootstrap-servers: localhost:9092
-    consumer:
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      acks: 1
+    properties:
+      schema.registry.url: http://localhost:8081
+      auto.register.schemas: true
+      specific.avro.reader: true
     streams:
-      application-id: dlq-delay-streams-app
+      application-id: audit-service-dev
+    producer:
+      acks: 1
 
 elasticsearch:
   host: localhost

@@ -16,6 +16,7 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -33,7 +34,7 @@ public class SystemMetricsErrorConsumer extends AbstractMetricsStream {
      */
     @Bean
     public KTable<String, KafkaCommonMessage<SystemResourceMetricsMessage>> systemMetricsErrorStream(
-            StreamsBuilder builder
+            @Qualifier("defaultKafkaStreamsBuilder") StreamsBuilder builder
     ) {
 
         // table

@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.util.function.ThrowingConsumer;
@@ -36,7 +37,9 @@ public class SystemMetricsAggregationStream extends AbstractMetricsStream {
     }
 
     @Bean
-    public List<KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>>> avgMax5MinStreams(StreamsBuilder builder) {
+    public List<KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>>> avgMax5MinStreams(
+            @Qualifier("defaultKafkaStreamsBuilder") StreamsBuilder builder
+    ) {
         List<String> resourceTypes = List.of("CPU", "DISK", "Memory");
 
         return resourceTypes.stream()

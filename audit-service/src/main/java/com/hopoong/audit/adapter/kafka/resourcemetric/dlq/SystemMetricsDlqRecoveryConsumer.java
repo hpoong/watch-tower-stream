@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -35,7 +36,9 @@ public class SystemMetricsDlqRecoveryConsumer {
      * system-resource-metrics DLQ 처리
      */
     @Bean
-    public KStream<String, String> systemMetricsDlqDelayStream(StreamsBuilder builder) {
+    public KStream<String, String> systemMetricsDlqDelayStream(
+            @Qualifier("defaultKafkaStreamsBuilder") StreamsBuilder builder
+    ) {
 
         KStream<String, String> dlqStream = builder.stream(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_DLQ_TOPIC);
 

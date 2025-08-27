@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.3.1'
 	id 'io.spring.dependency-management' version '1.1.5'
+
 }
 
 java {
@@ -12,6 +13,7 @@ java {
 
 repositories {
 	mavenCentral()
+	maven { url 'https://packages.confluent.io/maven/' }
 }
 
 
@@ -22,10 +24,16 @@ dependencies {
 	// springframework
 	implementation 'org.springframework.boot:spring-boot-starter-web'		// web
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'	// actuator
+//	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+//
+//	// PostgreSQL
+//	runtimeOnly("org.postgresql:postgresql")
 
 	// kafka
 	implementation 'org.springframework.kafka:spring-kafka'
 	implementation 'org.apache.kafka:kafka-streams'
+	implementation 'io.confluent:kafka-avro-serializer:7.8.0'
+	implementation "io.confluent:kafka-streams-avro-serde:7.8.0"
 
 	// elasticsearch
 	implementation 'co.elastic.clients:elasticsearch-java:8.12.0'

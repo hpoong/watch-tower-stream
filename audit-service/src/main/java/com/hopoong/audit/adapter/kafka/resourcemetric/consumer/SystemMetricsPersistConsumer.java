@@ -34,7 +34,7 @@ public class SystemMetricsPersistConsumer {
     @KafkaListener(
             topics = KafkaTopicManager.SYSTEM_RESOURCE_METRICS_TOPIC,
             groupId = "system-resource-metrics-group",
-            containerFactory = "kafkaListenerContainerSystemMetricsFactory",
+            containerFactory = "kafkaListenerContainerFactory",
             concurrency = "1"
     )
     public void consumeSystemResourceMetrics(ConsumerRecord<String, String> record, Acknowledgment ack) throws IOException {
@@ -45,6 +45,8 @@ public class SystemMetricsPersistConsumer {
             SystemResourceMetricsMessage body = message.getBody();
             KafkaCommonMessage.Header header = message.getHeader();
             String server = body.serverName();
+
+//            throw new KafkaProcessingException(record.topic(), record.partition(), record.offset(), header.getTraceId());
 
             // 테스트용 HashMap
             serverMessageMap

@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +28,9 @@ public class SystemMetricsReProcesConsumer {
      * system-resource-metrics 재처리
      */
     @Bean
-    public KStream<String, String> reprocessStream(StreamsBuilder builder) {
+    public KStream<String, String> reprocessStream(
+            @Qualifier("defaultKafkaStreamsBuilder") StreamsBuilder builder
+    ) {
         KStream<String, String> stream = builder.stream(KafkaTopicManager.SYSTEM_RESOURCE_METRICS_REPROCESS_TOPIC);
         stream
             .peek((key, value) -> LoggerUtil.section(log, "[REPROCESS] 완료"))

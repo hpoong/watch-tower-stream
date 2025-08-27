@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +28,9 @@ public class SystemMetricsAlertStream extends AbstractMetricsStream {
      * 리소스 사용량 임계치 초과시 알람처리
      */
     @Bean
-    public KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> systemMetricsThresholdAlertStream(StreamsBuilder builder) {
+    public KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> systemMetricsThresholdAlertStream(
+            @Qualifier("defaultKafkaStreamsBuilder") StreamsBuilder builder
+    ) {
         // 스트림 생성 및 테이블 생성
         KStream<String, KafkaCommonMessage<SystemResourceMetricsMessage>> metricsStream = createMetricsStream(builder);
         KTable<String, KafkaCommonMessage<SystemThresholdMessage>> thresholdTable = createThresholdTable(builder);
