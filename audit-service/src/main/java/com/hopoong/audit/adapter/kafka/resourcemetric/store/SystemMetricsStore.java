@@ -1,13 +1,13 @@
 package com.hopoong.audit.adapter.kafka.resourcemetric.store;
 
 import com.hopoong.core.topic.KafkaStoreManager;
-import lombok.RequiredArgsConstructor;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.stereotype.Component;
 
@@ -16,10 +16,15 @@ import java.util.Map;
 
 
 @Component
-@RequiredArgsConstructor
 public class SystemMetricsStore {
 
     private final StreamsBuilderFactoryBean factoryBean;
+
+    public SystemMetricsStore(
+        @Qualifier("defaultKafkaStreamsBuilder") StreamsBuilderFactoryBean factoryBean
+    ) {
+        this.factoryBean = factoryBean;
+    }
 
 
     public Map<String, Long> errorCountStoreQueryAllStore() {
