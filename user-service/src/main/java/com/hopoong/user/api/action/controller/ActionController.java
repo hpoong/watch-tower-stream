@@ -24,12 +24,12 @@ public class ActionController {
 		UUID id = UUID.randomUUID();
 
 		ThreadLocalRandom rnd = ThreadLocalRandom.current();
-		String tenantId = "t-" + rnd.nextInt(1000, 9999);
-		String userId = "u-" + rnd.nextInt(1000, 9999);
+		String tenantId = "tenant-001";
+		String userId = "user-" + rnd.nextInt(0, 5);
 		String sessionId = UUID.randomUUID().toString();
 
 		String[] eventTypes = {"CLICK", "VIEW", "LOGIN", "LOGOUT", "NAVIGATE"};
-		String[] features = {"DASHBOARD", "SETTINGS", "REPORTS", "PROFILE", null};
+		String[] features = {"DASHBOARD", "SETTINGS", "REPORTS", "PROFILE"};
 
 		String eventType = eventTypes[rnd.nextInt(eventTypes.length)];
 		String feature = features[rnd.nextInt(features.length)];
