@@ -1,0 +1,13 @@
+{
+  "type":"record",
+  "name":"FeatureCount5mRecord",
+  "namespace":"com.carroti.um",
+  "fields":[
+    {"name":"tenantId","type":"string"},
+    {"name":"feature","type":"string"},
+    {"name":"windowStart","type":{"type":"long","logicalType":"timestamp-millis"}},
+    {"name":"windowEnd","type":{"type":"long","logicalType":"timestamp-millis"}},
+    {"name":"count","type":"long"},
+    {"name":"emittedAt","type":{"type":"long","logicalType":"timestamp-millis"}}
+  ]
+}
