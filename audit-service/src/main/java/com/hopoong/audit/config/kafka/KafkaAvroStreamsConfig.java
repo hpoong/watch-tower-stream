@@ -35,7 +35,6 @@ public class KafkaAvroStreamsConfig {
     @Value("${spring.kafka.properties.specific.avro.reader:true}")
     private boolean specificAvroReader;
 
-
     @Bean(name = "avroStreamsConfig")
     public KafkaStreamsConfiguration avroStreamsConfiguration() {
         Map<String, Object> props = new HashMap<>();
@@ -44,6 +43,9 @@ public class KafkaAvroStreamsConfig {
 
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, SpecificAvroSerde.class.getName());
+
+        // 지연값 설정
+        props.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG, CreatedAtTimestampExtractor.class);
 
         props.put("schema.registry.url", schemaRegistryUrl);
         props.put("auto.register.schemas", autoRegisterSchemas);
