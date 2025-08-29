@@ -10,6 +10,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
@@ -85,8 +86,8 @@ public class KafkaAvroConfig {
 
     @Bean(name = "avroKafkaListenerContainerFactory")
     public ConcurrentKafkaListenerContainerFactory<String, SpecificRecord> avroKafkaListenerContainerFactory(
-            ConsumerFactory<String, SpecificRecord> avroConsumerFactory,
-            DefaultErrorHandler avroKafkaErrorHandler
+            @Qualifier("avroConsumerFactory") ConsumerFactory<String, SpecificRecord> avroConsumerFactory,
+            @Qualifier("avroKafkaErrorHandler") DefaultErrorHandler avroKafkaErrorHandler
     ) {
         ConcurrentKafkaListenerContainerFactory<String, SpecificRecord> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
@@ -99,7 +100,7 @@ public class KafkaAvroConfig {
 
     @Bean(name = "avroKafkaErrorHandler")
     public DefaultErrorHandler avroKafkaErrorHandler(
-            KafkaTemplate<String, SpecificRecord> avroKafkaTemplate
+            @Qualifier("avroKafkaTemplate") KafkaTemplate<String, SpecificRecord> avroKafkaTemplate
     ) {
         ConsumerRecordRecoverer recover = (record, ex) -> {
             try {
