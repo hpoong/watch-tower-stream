@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -42,7 +41,7 @@ public class UserActionEventKafkaPublisher<T> implements Consumer<UserActionEven
         CommonHeaderRecord header = CommonHeaderRecord.newBuilder()
                 .setTopic(topic)
                 .setType(type)
-                .setTraceId(UUID.randomUUID().toString())
+                .setTraceId(message.getId().toString())
                 .setTimestamp(TimeUtil.nowInstantUtc())
                 .build();
 
@@ -53,6 +52,6 @@ public class UserActionEventKafkaPublisher<T> implements Consumer<UserActionEven
     }
 
     private String generatePartitionKey(UserActionEventRecord message) {
-        return message.getId().toString();
+        return message.getTenantId();
     }
 }
