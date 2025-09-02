@@ -60,11 +60,6 @@ public class FeatureCountTopology {
         KStream<String, UserActionEventMessage> input = builder
                 .stream(KafkaTopicManager.USER_ACTION_EVENTS, Consumed.with(stringSerde, userActionSerde));
 
-        input.peek((key, value) -> {
-            System.out.println("input test ========================");
-            System.out.println(key);
-            System.out.println(value);
-        });
 
         // 정합성 필터링
         KStream<String, UserActionEventMessage> valid = input
@@ -82,24 +77,23 @@ public class FeatureCountTopology {
                 return body.getTenantId() + "|" + body.getFeature();
             });
 
+
+//        byTenantFeature.peek((key, value) -> {
+//            System.out.println("input test ========================");
+//            System.out.println(key);
+//            System.out.println(value);
+//        });
+
         // 윈도우 집계: 5분 Tumbling, grace 1분
         Duration windowSize = Duration.ofMinutes(5);
         Duration grace = Duration.ofMinutes(1);
-
-//        TimeWindows windows = TimeWindows
-//                .ofSizeWithNoGrace(windowSize)
-//                .advanceBy(windowSize);
 
         KTable<Windowed<String>, Long> counts = byTenantFeature
                 .groupByKey(Grouped.with(stringSerde, userActionSerde))
                 .windowedBy(TimeWindows.ofSizeAndGrace(windowSize, grace))
                 .count(Materialized.as(KafkaStoreManager.USER_SERVICE_FEATURE_COUNTS_STORE));
 
-        // 윈도우 종료 시점에만 결과를 보냄
-        KTable<Windowed<String>, Long> finalCounts = counts
-                .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()));
-
-        KStream<String, FeatureCount5mRecord> out = finalCounts.toStream()
+        KStream<String, FeatureCount5mRecord> out = counts.toStream()
                 .map((windowedKey, count) -> {
                     String k = windowedKey.key();           // tenant|feature
                     int sep = k.indexOf('|');
@@ -122,11 +116,11 @@ public class FeatureCountTopology {
                     return KeyValue.pair(newKey, rec);
                 });
 
-        out.peek((k, v) -> {
-            System.out.println("out test ================");
-            System.out.println(k);
-            System.out.println(v);
-        });
+//        out.peek((k, v) -> {
+//            System.out.println("out test ================");
+//            System.out.println(k);
+//            System.out.println(v);
+//        });
 
         out.to(
                 KafkaTopicManager.USER_FEATURE_COUNT_5M,

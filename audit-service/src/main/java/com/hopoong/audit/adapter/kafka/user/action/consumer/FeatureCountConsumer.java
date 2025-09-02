@@ -8,6 +8,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+
 @Component
 @RequiredArgsConstructor
 public class FeatureCountConsumer {
@@ -27,21 +29,15 @@ public class FeatureCountConsumer {
 
         System.out.println("USER_FEATURE_COUNT_5M ==============");
         System.out.println(key);
-        System.out.println(key);
-        System.out.println(key);
-        System.out.println(key);
+        System.out.println(event.getCount());
 
+        var rec = record.value();
+        String redisKey = String.format("rt:tenant:%s:feature:%s:count:5m:%d",
+                rec.getTenantId(), rec.getFeature(), rec.getWindowStart().toEpochMilli());
 
-//        var rec = reca.value();
-//        String redisKey = String.format("rt:tenant:%s:feature:%s:count:5m:%d",
-//                rec.getTenantId(), rec.getFeature(), rec.getWindowStart());
-//
-//        System.out.println("==================");
-//        System.out.println(redisKey);
-//        System.out.println(rec.getCount());
-//
-//        // 업서트 + TTL
-////        redisTemplate.opsForValue().set(redisKey, String.valueOf(rec.getCount()), Duration.ofHours(6));
+        // 업서트 + TTL
+        redisTemplate.opsForValue()
+                .set(redisKey, String.valueOf(rec.getCount()), Duration.ofHours(6));
     }
 
 
