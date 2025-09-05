@@ -24,10 +24,10 @@ dependencies {
 	// springframework
 	implementation 'org.springframework.boot:spring-boot-starter-web'		// web
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'	// actuator
-//	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-//
-//	// PostgreSQL
-//	runtimeOnly("org.postgresql:postgresql")
+	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+
+	// PostgreSQL
+	runtimeOnly("org.postgresql:postgresql")
 
 	// kafka
 	implementation 'org.springframework.kafka:spring-kafka'
