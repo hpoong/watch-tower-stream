@@ -1,9 +1,14 @@
 package com.hopoong.audit.persistence.entity;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.OffsetDateTime;
 import java.util.UUID;
+
 
 /* =========================
    outbox_event
@@ -34,11 +39,13 @@ public class OutboxEventEntity {
     @Column(name = "record_key", length = 256, nullable = false)
     private String recordKey; // Kafka record key (userId 또는 userId:sessionId)
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "payload", columnDefinition = "jsonb", nullable = false)
-    private String payload; // Avro/Proto 직렬화 전 논리 페이로드(로깅/리플레이 용)
+    private JsonNode payload; // JSONB ↔ JsonNode 변환
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "headers", columnDefinition = "jsonb")
-    private String headers; // nullable
+    private JsonNode headers;
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt; // DB default now()
