@@ -27,10 +27,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
 	// PostgreSQL
-	runtimeOnly("org.postgresql:postgresql")
-
-	// hibernate-types
-	implementation 'com.vladmihalcea:hibernate-types-52:2.20.0'
+	implementation group: 'org.postgresql', name: 'postgresql', version: '42.7.3'
 
 	// kafka
 	implementation 'org.springframework.kafka:spring-kafka'
