@@ -101,7 +101,7 @@ public class UserActionService {
                 .payload(objectMapper.valueToTree(payload))
                 .headers(objectMapper.valueToTree(headers))
                 .createdAt(now)
-                .publishedAt(now)
+                .publishedAt(null)
                 .errorCount(0)
                 .build();
 
