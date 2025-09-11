@@ -9,6 +9,7 @@ import com.hopoong.audit.repository.UserActionEventJpaRepository;
 import com.hopoong.avro.common.CommonHeaderRecord;
 import com.hopoong.avro.message.UserActionEventMessage;
 import com.hopoong.avro.record.user.UserActionEventRecord;
+import com.hopoong.core.topic.KafkaTopicManager;
 import com.hopoong.core.util.LoggerUtil;
 import com.sun.jdi.request.DuplicateRequestException;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +44,7 @@ public class UserActionService {
 
     @Transactional
     public UUID registerUserAction(ConsumerRecord<String, UserActionEventMessage> data) {
-        LoggerUtil.section(log, "user-action-eventse :: DB 저장");
+        LoggerUtil.section(log, "user-action-events :: DB 저장");
 
         CommonHeaderRecord header = data.value().getHeader();
         UserActionEventRecord body = data.value().getBody();
@@ -75,16 +76,16 @@ public class UserActionService {
         final String recordKey = body.getTenantId() + ":" + body.getUserId();
         UUID eventId = event.getId();
 
-        Map<String, Object> payload = Map.of(
-                "id", eventId,
-                "tenantId", body.getTenantId(),
-                "userId", body.getUserId(),
-                "sessionId", body.getSessionId(),
-                "eventType", body.getEventType(),
-                "feature", body.getFeature(),
-                "occurredAt", body.getOccurredAt().toEpochMilli(),
-                "createdAt", now
-        );
+//        Map<String, Object> payload = Map.of(
+//                "id", eventId,
+//                "tenantId", body.getTenantId(),
+//                "userId", body.getUserId(),
+//                "sessionId", body.getSessionId(),
+//                "eventType", body.getEventType(),
+//                "feature", body.getFeature(),
+//                "occurredAt", body.getOccurredAt().toEpochMilli(),
+//                "createdAt", now
+//        );
 
         Map<String, Object> headers = Map.of(
                 "traceId", header.getTraceId(),
@@ -93,12 +94,12 @@ public class UserActionService {
         );
 
         OutboxEventEntity outbox = OutboxEventEntity.builder()
-                .aggregateType("user_action_event")
+                .aggregateType(KafkaTopicManager.USER_ACTION_EVENTS) // user-action-events
                 .aggregateId(eventId)
                 .tenantId(body.getTenantId())
-                .topic("user-action-events")
+                .topic(KafkaTopicManager.USER_ACTION_EVENTS_ENRICHED_V1) // user-action-events-enriched.v1
                 .recordKey(recordKey)
-                .payload(objectMapper.valueToTree(payload))
+                .payload(objectMapper.valueToTree(data))
                 .headers(objectMapper.valueToTree(headers))
                 .createdAt(now)
                 .publishedAt(null)
