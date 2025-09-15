@@ -1,7 +1,11 @@
 package com.hopoong.audit.persistence.entity;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.OffsetDateTime;
 
 /* =========================
@@ -27,11 +31,13 @@ public class DltStoreEntity {
     @Column(name = "record_key", length = 256)
     private String recordKey; // nullable
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "payload", columnDefinition = "jsonb", nullable = false)
-    private String payload;
+    private JsonNode payload;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "headers", columnDefinition = "jsonb")
-    private String headers; // nullable
+    private JsonNode headers; // nullable
 
     @Column(name = "failed_at", nullable = false)
     private OffsetDateTime failedAt; // DB default now()
