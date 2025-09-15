@@ -1,6 +1,5 @@
 package com.hopoong.audit.adapter.kafka.user.action.consumer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.hopoong.audit.usecase.user.action.UserActionService;
 import com.hopoong.avro.message.UserActionEventMessage;
 import com.hopoong.core.topic.KafkaTopicManager;
@@ -22,7 +21,7 @@ public class UserActionConsumer {
             containerFactory = "avroKafkaListenerContainerFactory",
             concurrency = "1"
     )
-    public void userActionEventConsume(ConsumerRecord<String, UserActionEventMessage> record) throws JsonProcessingException {
+    public void userActionEventConsume(ConsumerRecord<String, UserActionEventMessage> record) throws Exception {
         userActionService.registerUserAction(record);
     }
 

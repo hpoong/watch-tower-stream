@@ -1,15 +1,16 @@
 package com.hopoong.audit.usecase.user.action;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hopoong.audit.persistence.entity.OutboxEventEntity;
 import com.hopoong.audit.persistence.entity.UserActionEventEntity;
+import com.hopoong.audit.repository.DltStoreJpaRepository;
 import com.hopoong.audit.repository.OutboxEventJpaRepository;
 import com.hopoong.audit.repository.UserActionEventJpaRepository;
 import com.hopoong.avro.common.CommonHeaderRecord;
 import com.hopoong.avro.message.UserActionEventMessage;
 import com.hopoong.avro.record.user.UserActionEventRecord;
 import com.hopoong.core.topic.KafkaTopicManager;
+import com.hopoong.core.util.AvroJsonUtil;
 import com.hopoong.core.util.LoggerUtil;
 import com.sun.jdi.request.DuplicateRequestException;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +44,7 @@ public class UserActionService {
 
 
     @Transactional
-    public UUID registerUserAction(ConsumerRecord<String, UserActionEventMessage> data) {
+    public UUID registerUserAction(ConsumerRecord<String, UserActionEventMessage> data) throws Exception {
         LoggerUtil.section(log, "user-action-events :: DB 저장");
 
         CommonHeaderRecord header = data.value().getHeader();
@@ -76,20 +77,9 @@ public class UserActionService {
         final String recordKey = body.getTenantId() + ":" + body.getUserId();
         UUID eventId = event.getId();
 
-//        Map<String, Object> payload = Map.of(
-//                "id", eventId,
-//                "tenantId", body.getTenantId(),
-//                "userId", body.getUserId(),
-//                "sessionId", body.getSessionId(),
-//                "eventType", body.getEventType(),
-//                "feature", body.getFeature(),
-//                "occurredAt", body.getOccurredAt().toEpochMilli(),
-//                "createdAt", now
-//        );
-
         Map<String, Object> headers = Map.of(
                 "traceId", header.getTraceId(),
-                "schema", "com.hopoong.avro.record.user.UserActionEventRecord",
+                "schema", "UserActionEventMessage",
                 "encoding", "avro"
         );
 
@@ -99,7 +89,7 @@ public class UserActionService {
                 .tenantId(body.getTenantId())
                 .topic(KafkaTopicManager.USER_ACTION_EVENTS_ENRICHED_V1) // user-action-events-enriched.v1
                 .recordKey(recordKey)
-                .payload(objectMapper.valueToTree(data))
+                .payload(AvroJsonUtil.toJsonNode(data.value()))
                 .headers(objectMapper.valueToTree(headers))
                 .createdAt(now)
                 .publishedAt(null)
@@ -108,7 +98,7 @@ public class UserActionService {
 
         outboxEventJpaRepository.save(outbox);
 
-        // 커밋 후 멱등키에는 eventId를 덮어써서(선택) 재요청 시 eventId 반환 가능
+        // 커밋 후 멱등키 eventId를 덮어써서 eventId 반환
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
             @Override
             public void afterCompletion(int status) { // 실패
