@@ -12,6 +12,7 @@ public class KafkaTopicManager {
 
 
     public static final String USER_ACTION_EVENTS = "user-action-events";
+    public static final String USER_ACTION_EVENTS_SHADOW = "user-action-events.shadow";
     public static final String USER_ACTION_EVENTS_ENRICHED_V1 = "user-action-events-enriched.v1";
     public static final String USER_FEATURE_COUNT_5M = "user-feature-count-5m";
 }
