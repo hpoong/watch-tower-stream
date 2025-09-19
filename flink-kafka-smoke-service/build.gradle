@@ -1,0 +1,44 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.3.1'
+	id 'io.spring.dependency-management' version '1.1.5'
+}
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+
+dependencies {
+
+	implementation project(':core-service')
+
+	// springframework
+	implementation 'org.springframework.boot:spring-boot-starter-web'		// web
+
+	// Flink
+	implementation "org.apache.flink:flink-core:1.20.2"
+	implementation "org.apache.flink:flink-streaming-java:1.20.2"
+	implementation "org.apache.flink:flink-clients:1.20.2"
+	implementation "org.apache.flink:flink-connector-base:1.20.2"
+
+	// Kafka 커넥터 (DataStream)
+	implementation "org.apache.flink:flink-connector-kafka:3.4.0-1.20"
+
+	// test
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+bootJar { enabled = false }
+jar { enabled = true }

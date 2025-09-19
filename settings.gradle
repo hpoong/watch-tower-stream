@@ -4,4 +4,5 @@ include(
         "resource-service",
         "audit-service",
         "user-service",
+        "flink-kafka-smoke-service",
 )
